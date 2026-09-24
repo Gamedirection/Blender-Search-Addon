@@ -2,7 +2,7 @@
 bl_info = {
     "name": "Blender Search",
     "author": "GameDirection",
-    "version": (0, 6, 0),
+    "version": (0, 6, 1),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Search",
     "description": "Search Blender's interface, inspect elements with an eyedropper, and save your own links.",
@@ -23,6 +23,7 @@ def register():
     from . import ui
     from . import overlay
     from . import keymap
+    from . import media
 
     properties.register()
     preferences.register()
@@ -30,6 +31,10 @@ def register():
     ui.register()
     overlay.register()
     keymap.register()
+
+    # Give already-downloaded pictures a head start on their Blender preview,
+    # instead of racing that generation the first time a popup shows them.
+    media.prewarm_cached()
 
 
 def unregister():

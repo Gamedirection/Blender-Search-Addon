@@ -59,6 +59,13 @@ Media Pack" button that checks the download size first, then downloads every
 picture, GIF, and video thumbnail used by the registry, so everything works
 without the internet from then on.
 
+Keep a GIF small: a large file with many frames (a few megabytes, tens of
+frames, over roughly 1000 pixels wide) can fail to generate a thumbnail in
+Blender's popup, even though it downloads and is a valid GIF. A short, few
+second clip at a modest resolution works reliably. Since Blender's popup can
+only ever show the first frame anyway, a short GIF loses nothing that a long
+one would have shown.
+
 ### Video Entries
 
 A video entry can be a plain text path to a local file under `resources`, which

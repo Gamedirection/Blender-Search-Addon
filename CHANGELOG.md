@@ -6,6 +6,26 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-24
+
+### Fixed
+- Confirmed pictures and video thumbnails (PNG, JPG) now display
+  correctly after the 0.5.1 fix. Only the bundled GIF example still
+  did not show. Its file downloaded correctly (verified as a real,
+  uncorrupted GIF), so the cause was the file itself: 2.8 MB and
+  dozens of frames at a large resolution, which can fail to generate a
+  thumbnail in Blender even though the download succeeds. Swapped the
+  Twisted Extrude example for a much smaller variant (9 frames, under
+  400 KB) and documented the size guidance in
+  `docs/registry_schema.md`.
+- Added a Referer header to every download and size check, matching
+  the file's own origin, since some CDNs reject or substitute requests
+  that do not send one.
+- Pictures now get a head start on Blender's own thumbnail generation:
+  a successful download schedules an immediate main-thread pre-load
+  instead of waiting for the next time a popup happens to draw it, and
+  anything already cached is pre-loaded once at startup.
+
 ## [0.6.0] - 2026-09-24
 
 ### Added

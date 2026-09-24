@@ -74,15 +74,28 @@ def status_for(url):
         return _status.get(url)
 
 
+def _request_headers(url):
+    # A plain User-Agent-only request gets rejected or substituted by some
+    # CDNs' hotlink protection. Adding a Referer matching the file's own
+    # origin satisfies same-origin checks without needing to know the exact
+    # page the file was originally found on.
+    parsed = urlparse(url)
+    return {
+        "User-Agent": _USER_AGENT,
+        "Referer": f"{parsed.scheme}://{parsed.netloc}/",
+    }
+
+
 def _download_one(url):
     path = cache_path(url)
     if path.exists():
         return True
     print(f"[Blender Search] Downloading {url} -> {path}")
-    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+    request = urllib.request.Request(url, headers=_request_headers(url))
     with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
         data = response.read()
-    print(f"[Blender Search] Got {len(data)} bytes for {url}")
+    signature = data[:8]
+    print(f"[Blender Search] Got {len(data)} bytes for {url}, starts with {signature!r}")
 
     # Note: if a single-item fetch and a pack download race on the exact
     # same URL, both threads write the same temp path. Worst case is a
@@ -90,8 +103,29 @@ def _download_one(url):
     temp_path = Path(str(path) + ".part")
     temp_path.write_bytes(data)
     os.replace(temp_path, path)
-    print(f"[Blender Search] Cached {url} at {path}, exists: {path.exists()}")
+    print(f"[Blender Search] Cached {url} at {path}, exists: {path.exists()}, size: {path.stat().st_size}")
     return True
+
+
+def _prewarm_preview(url):
+    """Ask Blender to generate this picture's thumbnail right away, on the
+    main thread, instead of waiting for the next time a popup happens to
+    draw it. A popup can be too short-lived to give Blender's own preview
+    generation time to finish on its very first request."""
+    from . import ui
+
+    path = cache_path(url)
+    if path.exists():
+        ui._load_preview(url, path)
+    return None
+
+
+def prewarm_cached():
+    """Pre-load previews for everything already cached, so the first popup
+    of a session does not race Blender's own thumbnail generation."""
+    for url in all_media_urls():
+        if is_cached(url):
+            bpy.app.timers.register(lambda url=url: _prewarm_preview(url), first_interval=0.0)
 
 
 def request_download(url):
@@ -117,6 +151,10 @@ def request_download(url):
             _download_one(url)
             with _lock:
                 _status.pop(url, None)
+            # bpy.app.timers.register() is documented as safe to call from a
+            # background thread specifically to hand work back to the main
+            # thread, which is what previews.load() needs to run on.
+            bpy.app.timers.register(lambda: _prewarm_preview(url), first_interval=0.0)
         except Exception as error:
             print(f"[Blender Search] Could not download {url}: {error}")
             with _lock:
@@ -129,7 +167,7 @@ def request_download(url):
 
 
 def _content_length(url):
-    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": _USER_AGENT})
+    request = urllib.request.Request(url, method="HEAD", headers=_request_headers(url))
     try:
         with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
             length = response.headers.get("Content-Length")
@@ -212,6 +250,7 @@ def start_pack_download():
         for url in urls:
             try:
                 _download_one(url)
+                bpy.app.timers.register(lambda url=url: _prewarm_preview(url), first_interval=0.0)
             except Exception as error:
                 print(f"[Blender Search] Could not download {url}: {error}")
             pack_state["done_count"] += 1
