@@ -6,6 +6,28 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-24
+
+### Fixed
+- GIFs were stuck on "Generating thumbnail..." forever, confirmed as a
+  permanent stall rather than a slow one. The cause: previews.load()
+  with path_type 'IMAGE' never actually finishes generating a thumbnail
+  for a GIF, no matter how long it is given. GIFs now load through
+  Blender's own image data pipeline (`bpy.data.images` plus
+  `preview_ensure()`) instead, which does understand the format. This
+  did not change how images or video thumbnails load, since those were
+  already working correctly.
+
+### Changed
+- The New Entry form's Description is now a real, multi-line text
+  block instead of a single-line field, since Blender has no
+  multi-line text widget for a plain property. Click "New" next to
+  Description, then write it in a Text Editor area; Markdown is
+  allowed. The info popup always shows it as plain text (Blender
+  cannot render Markdown), with the most common Markdown punctuation
+  stripped out for a cleaner look; an exported file keeps the
+  description exactly as written, punctuation included.
+
 ## [0.7.2] - 2026-09-24
 
 ### Added

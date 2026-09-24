@@ -25,7 +25,7 @@ Each file holds one JSON object with two fields.
 | `id` | Yes | text | A short, unique name for this entry. Use lowercase letters, numbers, dots, and underscores. Example: `view3d.proportional_edit_falloff`. |
 | `title` | Yes | text | The name shown to the user. |
 | `category` | Yes | text | A short group name, such as `modeling` or `shading`. |
-| `description` | Yes | text | A short, clear explanation of what the item does. |
+| `description` | Yes | text | A clear explanation of what the item does. Can be more than one line, and can use Markdown; the addon always shows it as plain text. |
 | `locations` | Yes | list of objects | Every place this item shows up. See "Locations" below. |
 | `manual_url` | No | text | A link to the matching page on `docs.blender.org`, or any other page about this. |
 | `images` | No | list of text | Pictures to show in the popup. See "Pictures, GIFs, and Video" below. |
@@ -84,12 +84,13 @@ Media Pack" button that checks the download size first, then downloads every
 picture, GIF, and video thumbnail used by the registry, so everything works
 without the internet from then on.
 
-Keep a GIF small: a large file with many frames (a few megabytes, tens of
-frames, over roughly 1000 pixels wide) can fail to generate a thumbnail in
-Blender's popup, even though it downloads and is a valid GIF. A short, few
-second clip at a modest resolution works reliably. Since Blender's popup can
-only ever show the first frame anyway, a short GIF loses nothing that a long
-one would have shown.
+Prefer a smaller GIF where you can, since Blender's popup can only ever
+show the first frame anyway, so a short clip loses nothing a long one would
+have shown, and it downloads faster for everyone. There is no longer a
+known size or frame-count limit that stops a GIF's thumbnail from
+generating; that was an earlier problem with how this addon loaded a GIF's
+preview, since fixed by loading it through Blender's full image pipeline
+instead of the lighter-weight one used for plain pictures.
 
 ### Video Entries
 

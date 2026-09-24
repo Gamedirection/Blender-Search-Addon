@@ -562,12 +562,26 @@ def _slugify(text):
     return text or "entry"
 
 
+def _clear_draft_description_text(wm):
+    """The description is a real bpy.types.Text datablock (Blender has no
+    multi-line string widget), used only as a scratchpad while drafting; its
+    content is copied into the saved entry as a plain string. Remove it once
+    a draft is done with it, so these do not pile up in bpy.data.texts."""
+    text = wm.search_addon_draft_description_text
+    if text is not None:
+        try:
+            bpy.data.texts.remove(text)
+        except Exception:
+            pass
+        wm.search_addon_draft_description_text = None
+
+
 def _reset_draft(wm):
+    _clear_draft_description_text(wm)
     wm.search_addon_draft_editing_id = ""
     wm.search_addon_draft_title = ""
     wm.search_addon_draft_category = ""
     wm.search_addon_draft_tags = ""
-    wm.search_addon_draft_description = ""
     wm.search_addon_draft_manual_url = ""
     wm.search_addon_draft_locations.clear()
     wm.search_addon_draft_links.clear()
@@ -601,8 +615,13 @@ def _load_entry_into_draft(context, entry):
     wm.search_addon_draft_title = entry.get("title", "")
     wm.search_addon_draft_category = entry.get("category", "")
     wm.search_addon_draft_tags = ", ".join(entry.get("tags", []))
-    wm.search_addon_draft_description = entry.get("description", "")
     wm.search_addon_draft_manual_url = entry.get("manual_url", "")
+
+    description = entry.get("description", "")
+    if description:
+        text = bpy.data.texts.new(name="Blender Search Description")
+        text.from_string(description)
+        wm.search_addon_draft_description_text = text
 
     for location in entry.get("locations", []):
         item = wm.search_addon_draft_locations.add()
@@ -692,7 +711,9 @@ class SEARCHADDON_OT_cancel_new_entry(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        context.window_manager.search_addon_compose_active = False
+        wm = context.window_manager
+        _reset_draft(wm)
+        wm.search_addon_compose_active = False
         return {'FINISHED'}
 
 
@@ -830,12 +851,15 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
                     video["thumbnail"] = link.thumbnail_url.strip()
                 videos.append(video)
 
+        description_text = wm.search_addon_draft_description_text
+        description = description_text.as_string().strip() if description_text is not None else ""
+
         entry_id = wm.search_addon_draft_editing_id or ("user." + _slugify(category) + "." + _slugify(title))
         entry = {
             "id": entry_id,
             "title": title,
             "category": category,
-            "description": wm.search_addon_draft_description.strip(),
+            "description": description,
             "manual_url": wm.search_addon_draft_manual_url.strip(),
             "images": images,
             "gifs": gifs,
@@ -846,6 +870,7 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
 
         storage.add_user_entry(entry)
         registry.load_all(force=True)
+        _clear_draft_description_text(wm)
 
         self.report({'INFO'}, "Saved: " + title)
         wm.search_addon_compose_active = False

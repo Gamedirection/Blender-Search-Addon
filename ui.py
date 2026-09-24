@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Sidebar panel, the search popup, and the shared popup layout for a registry entry."""
 
+import re
 import textwrap
 from pathlib import Path
 
@@ -13,6 +14,16 @@ from . import preferences
 from . import media
 
 _preview_collections = {}
+
+_MARKDOWN_MARKUP_RE = re.compile(r"[*_`#>]+")
+
+
+def _plain_text(markdown_text):
+    """Blender's UI has no widget that renders Markdown, so this strips the
+    most common formatting characters for a cleaner plain-text display.
+    The description saved with the entry keeps the real Markdown untouched.
+    """
+    return _MARKDOWN_MARKUP_RE.sub("", markdown_text)
 
 
 def _preview_collection():
@@ -54,7 +65,45 @@ def _icon_id_from_preview(preview):
     return preview.icon_id
 
 
-def _load_preview(key, path):
+def _load_gif_thumbnail(path):
+    """GIFs never finish generating a thumbnail through previews.load(key,
+    path, 'IMAGE'): image_size stays (0, 0) forever, confirmed by testing,
+    not just slow to render. Load through bpy.data.images instead, which is
+    Blender's full image pipeline and does understand GIF, then use its own
+    ID preview instead of the lightweight previews collection.
+    """
+    if not path.exists():
+        return 0
+    try:
+        image = bpy.data.images.load(str(path), check_existing=True)
+    except Exception as error:
+        print(f"[Blender Search] Could not open GIF {path}: {error}")
+        return 0
+
+    # Keep it alive even though nothing else references it, so it is not
+    # silently purged as unused orphan data between redraws.
+    image.use_fake_user = True
+
+    try:
+        image.preview_ensure()
+    except Exception as error:
+        print(f"[Blender Search] Could not generate a preview for {path}: {error}")
+        return 0
+
+    preview = image.preview
+    if preview is None or tuple(preview.image_size) == (0, 0):
+        return 0
+    return preview.icon_id
+
+
+def _load_thumbnail(key, path):
+    """Load (or reuse) a thumbnail for a file already on disk, and return its
+    icon id, or 0 if it is not ready or could not be loaded. Used directly by
+    media.py's background pre-warm timer too, which only needs the plain
+    icon id, not the richer (icon_id, state) pair _icon_id_for_url returns.
+    """
+    if path.suffix.lower() == ".gif":
+        return _load_gif_thumbnail(path)
     return _icon_id_from_preview(_get_or_start_preview(key, path))
 
 
@@ -62,7 +111,7 @@ _last_logged_state = {}
 
 
 def _icon_id_for_url(url):
-    """Load a cached picture for this URL. Only shows the first frame of a GIF.
+    """Load a cached picture for this URL.
 
     Returns (icon_id, state), where state is "ready", "loading", "rendering"
     (the file is downloaded and handed to Blender, which has not finished
@@ -72,14 +121,8 @@ def _icon_id_for_url(url):
     """
     path = media.cache_path(url)
     if path.exists():
-        preview = _get_or_start_preview(url, path)
-        icon_id = _icon_id_from_preview(preview)
-        if icon_id:
-            state = "ready"
-        elif preview is not None:
-            state = "rendering"
-        else:
-            state = "failed"
+        icon_id = _load_thumbnail(url, path)
+        state = "ready" if icon_id else "rendering"
     else:
         icon_id = 0
         prefs = preferences.get_prefs()
@@ -116,14 +159,8 @@ def _draw_media_thumbnail(layout, source, note=None):
             icon_id, state = _icon_id_for_url(source)
         else:
             path = Path(__file__).parent / "resources" / source
-            preview = _get_or_start_preview(source, path)
-            icon_id = _icon_id_from_preview(preview)
-            if icon_id:
-                state = "ready"
-            elif preview is not None:
-                state = "rendering"
-            else:
-                state = "failed"
+            icon_id = _load_thumbnail(source, path)
+            state = "ready" if icon_id else ("rendering" if path.exists() else "failed")
     except Exception as error:
         print(f"[Blender Search] Could not show picture {source}: {error}")
         icon_id, state = 0, "failed"
@@ -181,7 +218,7 @@ def draw_entry_info(layout, entry, exact=True):
     if editor_names:
         box.label(text="Found in: " + ", ".join(editor_names))
 
-    for line in textwrap.wrap(entry.get("description", ""), width=42) or [""]:
+    for line in textwrap.wrap(_plain_text(entry.get("description", "")), width=42) or [""]:
         box.label(text=line)
 
     prefs = preferences.get_prefs()
@@ -384,7 +421,19 @@ def _draw_compose_panel(layout, context):
     if existing:
         box.label(text="Existing categories: " + ", ".join(existing))
     box.prop(wm, "search_addon_draft_tags")
-    box.prop(wm, "search_addon_draft_description")
+
+    box.label(text="Description (Markdown is allowed)")
+    description_text = wm.search_addon_draft_description_text
+    row = box.row(align=True)
+    row.template_ID(wm, "search_addon_draft_description_text", new="text.new", unlink="text.unlink", text="")
+    if description_text is not None:
+        box.label(text="Open a Text Editor area to write or edit it. A preview:")
+        preview_lines = textwrap.wrap(description_text.as_string(), width=42)[:4]
+        for line in preview_lines or [""]:
+            box.label(text=line)
+    else:
+        box.label(text="Click New to start writing.")
+
     box.prop(wm, "search_addon_draft_manual_url")
 
     box.separator()

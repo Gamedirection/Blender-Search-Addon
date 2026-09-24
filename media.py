@@ -126,7 +126,7 @@ def _schedule_prewarm(url, max_attempts=10):
         path = cache_path(url)
         if not path.exists():
             return None
-        if ui._load_preview(url, path):
+        if ui._load_thumbnail(url, path):
             return None
         remaining[0] -= 1
         if remaining[0] <= 0:

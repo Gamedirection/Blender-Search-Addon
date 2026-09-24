@@ -162,8 +162,13 @@ one for you.
    You can also turn on the eyedropper and Shift+Click the thing you
    want to document, which starts a new entry already pointed at that
    spot.
-2. Fill in a title, category, tags, a description, and a manual or
-   source link if you have one.
+2. Fill in a title, category, and tags. For the description, click
+   "New" next to Description, then open a Text Editor area in Blender
+   and write it there. It can be as many lines as you want, and you can
+   write it with Markdown. This addon always shows it as plain text,
+   since it cannot render Markdown, but an exported file keeps it
+   exactly as you wrote it. Add a manual or source link if you have
+   one.
 3. Add every place this shows up. Click "Add by Clicking", then click
    the real spot in Blender, and repeat for any other place it shows
    up. You can also type the editor and region names in yourself. A

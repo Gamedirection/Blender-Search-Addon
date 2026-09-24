@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 import bpy
 from bpy.types import PropertyGroup, WindowManager
-from bpy.props import BoolProperty, StringProperty, FloatProperty, CollectionProperty
+from bpy.props import BoolProperty, StringProperty, FloatProperty, CollectionProperty, PointerProperty
 
 
 class SearchAddonDraftLocation(PropertyGroup):
@@ -67,9 +67,14 @@ def register():
         name="Tags",
         description="Extra words people might search for, separated by commas",
     )
-    WindowManager.search_addon_draft_description = StringProperty(
+    WindowManager.search_addon_draft_description_text = PointerProperty(
+        type=bpy.types.Text,
         name="Description",
-        description="Plain text, one paragraph. You can write it with Markdown, but this addon only shows it as plain text",
+        description=(
+            "A real multi-line text block for this entry's description. "
+            "Markdown is allowed; this addon shows it as plain text, since it "
+            "cannot render Markdown, but an exported file keeps it as written"
+        ),
     )
     WindowManager.search_addon_draft_manual_url = StringProperty(
         name="Manual or Source Link",
@@ -83,7 +88,7 @@ def unregister():
     del WindowManager.search_addon_draft_links
     del WindowManager.search_addon_draft_locations
     del WindowManager.search_addon_draft_manual_url
-    del WindowManager.search_addon_draft_description
+    del WindowManager.search_addon_draft_description_text
     del WindowManager.search_addon_draft_tags
     del WindowManager.search_addon_draft_category
     del WindowManager.search_addon_draft_title
