@@ -31,7 +31,8 @@ def _load_preview(key, path):
         return 0
     try:
         return pcoll.load(key, str(path), 'IMAGE').icon_id
-    except Exception:
+    except Exception as error:
+        print(f"[Blender Search] Could not display {path}: {error}")
         return 0
 
 
@@ -44,17 +45,27 @@ def _icon_id_from_bundled(relative_path):
 def _icon_id_for_url(url):
     """Load a cached picture for this URL. Only shows the first frame of a GIF.
 
-    Returns 0 if it is not cached yet. If internet media is allowed, this
-    also starts a background download so it is ready next time.
+    Returns (icon_id, state), where state is "ready", "loading", "failed", or
+    "blocked" (Blender's own "Allow Online Access" preference is off). If
+    internet media is allowed, a cache miss also starts a background download
+    so it is ready next time.
     """
     path = media.cache_path(url)
     if path.exists():
-        return _load_preview(url, path)
+        icon_id = _load_preview(url, path)
+        return icon_id, ("ready" if icon_id else "failed")
 
     prefs = preferences.get_prefs()
-    if prefs is None or prefs.allow_internet_media:
-        media.request_download(url)
-    return 0
+    if prefs is not None and not prefs.allow_internet_media:
+        return 0, "blocked"
+
+    media.request_download(url)
+    status = media.status_for(url)
+    if status == "blocked":
+        return 0, "blocked"
+    if status == "error":
+        return 0, "failed"
+    return 0, "loading"
 
 
 def _draw_media_thumbnail(layout, source, note=None):
@@ -66,9 +77,14 @@ def _draw_media_thumbnail(layout, source, note=None):
     is_remote = source.startswith("http://") or source.startswith("https://")
 
     try:
-        icon_id = _icon_id_for_url(source) if is_remote else _icon_id_from_bundled(source)
-    except Exception:
-        icon_id = 0
+        if is_remote:
+            icon_id, state = _icon_id_for_url(source)
+        else:
+            icon_id = _icon_id_from_bundled(source)
+            state = "ready" if icon_id else "failed"
+    except Exception as error:
+        print(f"[Blender Search] Could not show picture {source}: {error}")
+        icon_id, state = 0, "failed"
 
     if icon_id:
         layout.template_icon(icon_value=icon_id, scale=6.0)
@@ -80,9 +96,10 @@ def _draw_media_thumbnail(layout, source, note=None):
         layout.label(text="Picture not found: " + source, icon='ERROR')
         return
 
-    prefs = preferences.get_prefs()
-    if prefs is not None and not prefs.allow_internet_media:
-        layout.label(text="Not shown. Internet media is turned off.", icon='INFO')
+    if state == "blocked":
+        layout.label(text="Internet access for pictures is off.", icon='INFO')
+    elif state == "failed":
+        layout.label(text="Could not load this picture.", icon='ERROR')
     else:
         layout.label(text="Loading picture...")
     props = layout.operator("wm.url_open", text="Open Picture in Browser", icon='URL')

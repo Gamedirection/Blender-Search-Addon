@@ -157,6 +157,23 @@ Most of our work on this addon is adding items people find missing. Please
 use the "Missed Item" report if you are not sure how to edit the file
 yourself.
 
+## If a Picture Does Not Show
+
+1. Check that Blender's own "Allow Online Access" setting is turned on, in
+   Edit, then Preferences, then System. This addon cannot download
+   pictures, GIFs, or video thumbnails while it is off, even if the
+   addon's own "Allow Fetching Media From the Internet" is on.
+2. If it still does not show, check the "Currently downloaded" line in
+   this addon's preferences, and the System Console (Window, then
+   Toggle System Console, on Windows; run Blender from a terminal on
+   macOS and Linux) for a line starting with "[Blender Search]".
+3. You can always click "Open Picture in Browser" under a picture that
+   will not show, to see it outside Blender.
+
+A GIF only ever shows its first frame in the popup. Blender's popups
+cannot play GIFs or video. Click "Video" under a video entry to watch it
+in your system's player or browser instead.
+
 ## How to Report a Problem
 
 1. Click the "Report a Problem" button inside the addon, or go to the

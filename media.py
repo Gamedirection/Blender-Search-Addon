@@ -19,6 +19,7 @@ _USER_AGENT = "Mozilla/5.0 (compatible; BlenderSearchAddon/1.0)"
 _TIMEOUT = 20
 
 _pending = set()
+_status = {}
 _lock = threading.Lock()
 
 pack_state = {
@@ -29,7 +30,15 @@ pack_state = {
     "total_count": 0,
     "downloading": False,
     "done_count": 0,
+    "blocked": False,
 }
+
+
+def online_access_allowed():
+    """Blender's own "Allow Online Access" preference (added in 4.2). Older
+    Blender versions do not have this attribute at all, so default to True
+    there rather than assuming the newer, more restrictive behavior."""
+    return getattr(bpy.app, "online_access", True)
 
 
 def _cache_dir():
@@ -56,16 +65,19 @@ def is_cached(url):
     return cache_path(url).exists()
 
 
+def status_for(url):
+    """None (nothing wrong so far), "error", or "blocked"."""
+    with _lock:
+        return _status.get(url)
+
+
 def _download_one(url):
     path = cache_path(url)
     if path.exists():
         return True
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    try:
-        with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
-            data = response.read()
-    except Exception:
-        return False
+    with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
+        data = response.read()
 
     # Note: if a single-item fetch and a pack download race on the exact
     # same URL, both threads write the same temp path. Worst case is a
@@ -80,14 +92,27 @@ def request_download(url):
     """Fetch a single URL in the background if it is not already cached or pending."""
     if is_cached(url):
         return
+
+    if not online_access_allowed():
+        with _lock:
+            _status[url] = "blocked"
+        return
+
     with _lock:
         if url in _pending:
             return
         _pending.add(url)
+        _status.pop(url, None)
 
     def worker():
         try:
             _download_one(url)
+            with _lock:
+                _status.pop(url, None)
+        except Exception as error:
+            print(f"[Blender Search] Could not download {url}: {error}")
+            with _lock:
+                _status[url] = "error"
         finally:
             with _lock:
                 _pending.discard(url)
@@ -101,7 +126,8 @@ def _content_length(url):
         with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
             length = response.headers.get("Content-Length")
             return int(length) if length is not None else None
-    except Exception:
+    except Exception as error:
+        print(f"[Blender Search] Could not check size of {url}: {error}")
         return None
 
 
@@ -130,6 +156,10 @@ def all_media_urls():
 def start_size_check():
     if pack_state["checking"]:
         return
+    if not online_access_allowed():
+        pack_state["blocked"] = True
+        return
+    pack_state["blocked"] = False
     urls = [url for url in all_media_urls() if not is_cached(url)]
     pack_state.update({
         "checking": True,
@@ -159,6 +189,10 @@ def start_size_check():
 def start_pack_download():
     if pack_state["downloading"]:
         return
+    if not online_access_allowed():
+        pack_state["blocked"] = True
+        return
+    pack_state["blocked"] = False
     urls = [url for url in all_media_urls() if not is_cached(url)]
     pack_state.update({
         "downloading": True,
@@ -168,7 +202,10 @@ def start_pack_download():
 
     def worker():
         for url in urls:
-            _download_one(url)
+            try:
+                _download_one(url)
+            except Exception as error:
+                print(f"[Blender Search] Could not download {url}: {error}")
             pack_state["done_count"] += 1
         pack_state["downloading"] = False
 

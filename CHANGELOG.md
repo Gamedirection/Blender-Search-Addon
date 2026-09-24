@@ -6,6 +6,24 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-24
+
+### Fixed
+- Pictures could get stuck forever on "Loading picture...", with no way
+  to tell a slow download apart from one that had actually failed, or
+  from Blender's own "Allow Online Access" preference (Preferences >
+  System) being off, which blocks this addon from downloading anything.
+  The info popup now shows a specific message for each of these cases,
+  a real error is printed to the System Console when a download fails,
+  and the addon checks `bpy.app.online_access` before trying to fetch
+  or check the size of anything.
+- A failed download no longer keeps retrying silently forever without
+  ever surfacing why.
+
+### Note
+- A GIF showing only its first frame is expected, not a bug. Blender's
+  popups cannot play GIFs or video. This is called out in the README.
+
 ## [0.5.0] - 2026-09-24
 
 ### Fixed

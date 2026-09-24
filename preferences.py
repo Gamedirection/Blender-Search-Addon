@@ -83,6 +83,10 @@ class SearchAddonPreferences(AddonPreferences):
         box.label(text="Download every picture, GIF, and video thumbnail so they show without the internet.")
         box.label(text="This can be large. Check the size first.", icon='ERROR')
 
+        if not media.online_access_allowed():
+            box.label(text="Blender's own 'Allow Online Access' is off. Turn it on in", icon='ERROR')
+            box.label(text="Preferences > System to use this or to show pictures at all.")
+
         state = media.pack_state
         if state["checking"]:
             box.label(text=f"Checking size... ({state['checked_count']} of {state['total_count']})")
