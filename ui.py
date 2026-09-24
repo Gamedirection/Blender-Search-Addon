@@ -373,7 +373,10 @@ class SEARCHADDON_PT_sidebar(bpy.types.Panel):
 def _draw_compose_panel(layout, context):
     wm = context.window_manager
     box = layout.box()
-    box.label(text="New Entry", icon='ADD')
+    if wm.search_addon_draft_editing_id:
+        box.label(text="Editing Your Entry")
+    else:
+        box.label(text="New Entry", icon='ADD')
 
     box.prop(wm, "search_addon_draft_title")
     box.prop(wm, "search_addon_draft_category")
@@ -416,7 +419,8 @@ def _draw_compose_panel(layout, context):
 
     box.separator()
     row = box.row(align=True)
-    row.operator("searchaddon.save_draft_entry", icon='CHECKMARK')
+    save_text = "Save Changes" if wm.search_addon_draft_editing_id else "Save Entry"
+    row.operator("searchaddon.save_draft_entry", text=save_text, icon='CHECKMARK')
     row.operator("searchaddon.cancel_new_entry", icon='X')
 
 

@@ -28,7 +28,8 @@ parts of Blender's user interface.
   as you want.
 - It lets you create your own entries from inside Blender, without
   editing any files, and Shift+Click with the eyedropper to start one
-  already pointed at what you were looking at.
+  already pointed at what you were looking at. You can edit or delete
+  any entry you made from the addon's preferences.
 - It lets you export your own entries and links to a file, so you can
   share them, and import a file someone else shared with you.
 - It gives you a button to report a problem or a missing item.
@@ -170,6 +171,16 @@ one for you.
    Pictures Without the Internet" above for how these work.
 5. Click "Save Entry". It is saved on your computer, and you can search
    for it right away.
+
+## How to Change or Delete an Entry You Made
+
+1. Open Edit, then Preferences, then Add-ons, and open this addon's
+   preferences.
+2. Find "Your Contributions". Every entry you have created is listed
+   here.
+3. Click "Edit" to load it back into the New Entry form in the Search
+   sidebar panel, make your changes, then click "Save Changes".
+4. Click "Remove" to delete it. This cannot be undone.
 
 ## How to Share What You Have Added
 

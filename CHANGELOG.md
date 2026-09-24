@@ -6,6 +6,16 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-24
+
+### Added
+- A "Your Contributions" list in the addon's preferences, showing every
+  entry you have created. "Edit" loads it back into the New Entry form
+  in the Search sidebar so you can change it; "Remove" deletes it after
+  confirming, since that cannot be undone.
+- Editing keeps the same entry id, so your personal links, favorites,
+  and recent search history for it are not affected.
+
 ## [0.7.0] - 2026-09-24
 
 ### Added

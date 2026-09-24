@@ -64,6 +64,7 @@ class SearchAddonPreferences(AddonPreferences):
     def draw(self, context):
         from . import keymap
         from . import media
+        from . import storage
 
         layout = self.layout
         layout.prop(self, "highlight_color")
@@ -109,6 +110,19 @@ class SearchAddonPreferences(AddonPreferences):
 
         box = layout.box()
         box.label(text="Your Contributions")
+
+        user_entries = storage.load_user_entries().get("entries", [])
+        if user_entries:
+            for entry in user_entries:
+                row = box.row(align=True)
+                row.label(text=entry.get("title") or entry.get("id", "?"))
+                edit_props = row.operator("searchaddon.edit_user_entry", text="Edit")
+                edit_props.entry_id = entry["id"]
+                remove_props = row.operator("searchaddon.remove_user_entry", text="Remove", icon='TRASH')
+                remove_props.entry_id = entry["id"]
+        else:
+            box.label(text="You have not created any entries yet.", icon='INFO')
+
         box.label(text="Share the entries and links you have added with other people.")
         row = box.row(align=True)
         row.operator("searchaddon.export_contributions", icon='EXPORT')

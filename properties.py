@@ -46,6 +46,11 @@ def register():
         name="New Entry Open",
         default=False,
     )
+    WindowManager.search_addon_draft_editing_id = StringProperty(
+        name="Editing",
+        description="The id of your entry being edited. Empty means this draft will create a new one",
+        default="",
+    )
     WindowManager.search_addon_draft_title = StringProperty(name="Title")
     WindowManager.search_addon_draft_category = StringProperty(
         name="Category",
@@ -75,6 +80,7 @@ def unregister():
     del WindowManager.search_addon_draft_tags
     del WindowManager.search_addon_draft_category
     del WindowManager.search_addon_draft_title
+    del WindowManager.search_addon_draft_editing_id
     del WindowManager.search_addon_compose_active
     del WindowManager.search_addon_show_recent
     del WindowManager.search_addon_show_favorites

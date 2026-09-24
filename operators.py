@@ -504,6 +504,7 @@ def _slugify(text):
 
 
 def _reset_draft(wm):
+    wm.search_addon_draft_editing_id = ""
     wm.search_addon_draft_title = ""
     wm.search_addon_draft_category = ""
     wm.search_addon_draft_tags = ""
@@ -511,6 +512,12 @@ def _reset_draft(wm):
     wm.search_addon_draft_manual_url = ""
     wm.search_addon_draft_locations.clear()
     wm.search_addon_draft_links.clear()
+
+
+def _redraw_all(wm):
+    for window in wm.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
 
 
 def _start_new_entry(context, initial_location=None):
@@ -522,9 +529,48 @@ def _start_new_entry(context, initial_location=None):
         item.space_type = space_type
         item.region_type = region_type
     wm.search_addon_compose_active = True
-    for window in wm.windows:
-        for area in window.screen.areas:
-            area.tag_redraw()
+    _redraw_all(wm)
+
+
+def _load_entry_into_draft(context, entry):
+    """Fill the New Entry form with an existing entry of the user's own, so
+    they can change it instead of starting over. Keeps the same id, since
+    personal links, favorites, and recent searches are all keyed by it."""
+    wm = context.window_manager
+    _reset_draft(wm)
+    wm.search_addon_draft_editing_id = entry.get("id", "")
+    wm.search_addon_draft_title = entry.get("title", "")
+    wm.search_addon_draft_category = entry.get("category", "")
+    wm.search_addon_draft_tags = ", ".join(entry.get("tags", []))
+    wm.search_addon_draft_description = entry.get("description", "")
+    wm.search_addon_draft_manual_url = entry.get("manual_url", "")
+
+    for location in entry.get("locations", []):
+        item = wm.search_addon_draft_locations.add()
+        item.space_type = location.get("space_type", "")
+        item.region_type = location.get("region_type", "WINDOW")
+        item.ui_path = location.get("ui_path", "")
+
+    for url in entry.get("images", []):
+        item = wm.search_addon_draft_links.add()
+        item.kind = "image"
+        item.url = url
+    for url in entry.get("gifs", []):
+        item = wm.search_addon_draft_links.add()
+        item.kind = "gif"
+        item.url = url
+    for video in entry.get("videos", []):
+        item = wm.search_addon_draft_links.add()
+        item.kind = "video"
+        if isinstance(video, str):
+            item.url = video
+        else:
+            item.url = video.get("url", "")
+            item.label = video.get("label", "")
+            item.thumbnail_url = video.get("thumbnail", "")
+
+    wm.search_addon_compose_active = True
+    _redraw_all(wm)
 
 
 class SEARCHADDON_OT_new_entry(bpy.types.Operator):
@@ -534,6 +580,44 @@ class SEARCHADDON_OT_new_entry(bpy.types.Operator):
 
     def execute(self, context):
         _start_new_entry(context)
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_edit_user_entry(bpy.types.Operator):
+    bl_idname = "searchaddon.edit_user_entry"
+    bl_label = "Edit Entry"
+    bl_description = "Load this entry into the New Entry form so you can change it"
+    bl_options = {'INTERNAL'}
+
+    entry_id: StringProperty(options={'HIDDEN'})
+
+    def execute(self, context):
+        data = storage.load_user_entries()
+        entry = next((e for e in data["entries"] if e.get("id") == self.entry_id), None)
+        if entry is None:
+            self.report({'ERROR'}, "That entry was not found")
+            return {'CANCELLED'}
+
+        _load_entry_into_draft(context, entry)
+        self.report({'INFO'}, "Loaded into the New Entry form in the Search sidebar panel")
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_remove_user_entry(bpy.types.Operator):
+    bl_idname = "searchaddon.remove_user_entry"
+    bl_label = "Remove Entry"
+    bl_description = "Delete this entry of yours. This cannot be undone"
+    bl_options = {'INTERNAL'}
+
+    entry_id: StringProperty(options={'HIDDEN'})
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_confirm(self, event)
+
+    def execute(self, context):
+        storage.remove_user_entry(self.entry_id)
+        registry.load_all(force=True)
+        self.report({'INFO'}, "Removed")
         return {'FINISHED'}
 
 
@@ -570,9 +654,7 @@ class SEARCHADDON_OT_pick_location(bpy.types.Operator):
                 item = context.window_manager.search_addon_draft_locations.add()
                 item.space_type = area.type
                 item.region_type = region.type
-                for window in context.window_manager.windows:
-                    for a in window.screen.areas:
-                        a.tag_redraw()
+                _redraw_all(context.window_manager)
             return {'FINISHED'}
 
         return {'PASS_THROUGH'}
@@ -677,7 +759,7 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
                     video["thumbnail"] = link.thumbnail_url.strip()
                 videos.append(video)
 
-        entry_id = "user." + _slugify(category) + "." + _slugify(title)
+        entry_id = wm.search_addon_draft_editing_id or ("user." + _slugify(category) + "." + _slugify(title))
         entry = {
             "id": entry_id,
             "title": title,
@@ -795,6 +877,8 @@ classes = (
     SEARCHADDON_OT_download_pack,
     SEARCHADDON_OT_clear_media_cache,
     SEARCHADDON_OT_new_entry,
+    SEARCHADDON_OT_edit_user_entry,
+    SEARCHADDON_OT_remove_user_entry,
     SEARCHADDON_OT_cancel_new_entry,
     SEARCHADDON_OT_pick_location,
     SEARCHADDON_OT_add_draft_location,

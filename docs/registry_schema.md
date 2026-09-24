@@ -193,7 +193,11 @@ create one for you:
    right away.
 
 Your own entries are stored separately from the ones bundled with the
-addon, so an addon update never overwrites them. Use "Export Your
-Contributions" in the addon's preferences to save your new entries and
-personal links to a file, and send that file to someone else, or open a
-pull request with it. They use "Import Contributions" to add them.
+addon, so an addon update never overwrites them. The addon's preferences
+list every entry you have made, with "Edit" (loads it back into the New
+Entry form) and "Remove" (deletes it, after confirming) next to each one.
+Editing keeps the same id, so any personal links, favorites, or recent
+search history for it stay attached. Use "Export Your Contributions" in
+the addon's preferences to save your new entries and personal links to a
+file, and send that file to someone else, or open a pull request with it.
+They use "Import Contributions" to add them.
