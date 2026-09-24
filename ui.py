@@ -65,45 +65,18 @@ def _icon_id_from_preview(preview):
     return preview.icon_id
 
 
-def _load_gif_thumbnail(path):
-    """GIFs never finish generating a thumbnail through previews.load(key,
-    path, 'IMAGE'): image_size stays (0, 0) forever, confirmed by testing,
-    not just slow to render. Load through bpy.data.images instead, which is
-    Blender's full image pipeline and does understand GIF, then use its own
-    ID preview instead of the lightweight previews collection.
-    """
-    if not path.exists():
-        return 0
-    try:
-        image = bpy.data.images.load(str(path), check_existing=True)
-    except Exception as error:
-        print(f"[Blender Search] Could not open GIF {path}: {error}")
-        return 0
-
-    # Keep it alive even though nothing else references it, so it is not
-    # silently purged as unused orphan data between redraws.
-    image.use_fake_user = True
-
-    try:
-        image.preview_ensure()
-    except Exception as error:
-        print(f"[Blender Search] Could not generate a preview for {path}: {error}")
-        return 0
-
-    preview = image.preview
-    if preview is None or tuple(preview.image_size) == (0, 0):
-        return 0
-    return preview.icon_id
-
-
 def _load_thumbnail(key, path):
     """Load (or reuse) a thumbnail for a file already on disk, and return its
     icon id, or 0 if it is not ready or could not be loaded. Used directly by
     media.py's background pre-warm timer too, which only needs the plain
     icon id, not the richer (icon_id, state) pair _icon_id_for_url returns.
+
+    GIFs are not handled here. Two different Blender-native thumbnail
+    mechanisms were tried for them (previews.load with path_type 'IMAGE',
+    then bpy.data.images plus preview_ensure()) and neither reliably
+    generated a thumbnail in practice, so a GIF is shown as a plain open
+    button instead; see _draw_gif_link().
     """
-    if path.suffix.lower() == ".gif":
-        return _load_gif_thumbnail(path)
     return _icon_id_from_preview(_get_or_start_preview(key, path))
 
 
@@ -190,6 +163,21 @@ def _draw_media_thumbnail(layout, source, note=None):
     props.url = source
 
 
+def _draw_gif_link(layout, source):
+    """A GIF shows as a plain open button, not an inline picture. Blender has
+    no thumbnail mechanism that reliably renders one; see _load_thumbnail().
+    """
+    is_remote = source.startswith("http://") or source.startswith("https://")
+    row = layout.row()
+    row.label(text="GIF" if is_remote else Path(source).name)
+    if is_remote:
+        props = row.operator("wm.url_open", text="Open GIF", icon='URL')
+        props.url = source
+    else:
+        props = row.operator("searchaddon.play_video", text="Open GIF", icon='URL')
+        props.relative_path = source
+
+
 def _draw_favorite_button(layout, entry_id):
     is_fav = storage.is_favorite(entry_id)
     props = layout.operator(
@@ -232,7 +220,7 @@ def draw_entry_info(layout, entry, exact=True):
 
     if show_gifs:
         for gif_source in entry.get("gifs", []):
-            _draw_media_thumbnail(box, gif_source, note="First frame shown. GIFs do not play in this popup.")
+            _draw_gif_link(box, gif_source)
 
     if show_videos:
         for video in entry.get("videos", []):

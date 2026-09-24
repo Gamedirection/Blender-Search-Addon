@@ -194,13 +194,16 @@ def _content_length(url):
 
 
 def all_media_urls():
-    """Every image, GIF, and video thumbnail URL referenced by the registry."""
+    """Every image and video thumbnail URL referenced by the registry.
+
+    A GIF is not included: it is shown as a plain open button, not a cached
+    inline picture, so there is nothing to download or pre-warm for it.
+    """
     from . import registry
 
     urls = []
     for entry in registry.all_entries().values():
         urls.extend(entry.get("images", []))
-        urls.extend(entry.get("gifs", []))
         for video in entry.get("videos", []):
             if isinstance(video, dict) and video.get("thumbnail"):
                 urls.append(video["thumbnail"])

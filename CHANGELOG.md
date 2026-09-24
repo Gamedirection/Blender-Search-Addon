@@ -6,6 +6,19 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-24
+
+### Changed
+- A GIF now always shows as an "Open GIF" button, never an inline
+  picture. Two different Blender-native thumbnail mechanisms were
+  tried for GIFs (`bpy.utils.previews`, then `bpy.data.images` plus
+  `preview_ensure()`) and neither reliably generated a thumbnail in
+  practice, so this addon no longer attempts one. GIFs are also no
+  longer downloaded or counted by the "Download Offline Media Pack"
+  feature, since nothing reads a cached copy anymore; a GIF always
+  opens the original link directly. Images and video thumbnails are
+  unaffected, since those were already working correctly.
+
 ## [0.8.0] - 2026-09-24
 
 ### Fixed

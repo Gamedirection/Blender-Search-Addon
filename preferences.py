@@ -47,7 +47,7 @@ class SearchAddonPreferences(AddonPreferences):
     )
     show_gifs: BoolProperty(
         name="GIFs",
-        description="Show the first frame of bundled GIFs in the info popup",
+        description="Show a button to open a GIF in the info popup",
         default=True,
     )
     show_videos: BoolProperty(

@@ -15,14 +15,14 @@ parts of Blender's user interface.
 - It lets you mark any item as a favorite with a star, and it remembers
   items you searched for recently.
 - It shows a link to the official Blender manual for many items.
-- It can show pictures, GIFs, and videos for an item, if the item has
-  them. It downloads these from the internet the first time it needs
-  them, then keeps a copy. You can turn each of these off in the
-  addon's preferences, or turn off internet access for pictures
-  entirely.
+- It can show pictures and videos for an item, if the item has them. It
+  downloads these from the internet the first time it needs them, then
+  keeps a copy. You can turn each of these off in the addon's
+  preferences, or turn off internet access for pictures entirely. A
+  GIF always shows as an "Open GIF" button instead of a picture.
 - It has a "Download Offline Media Pack" button in preferences. It
-  checks the download size first, then downloads every picture, GIF,
-  and video thumbnail, so they work with no internet connection.
+  checks the download size first, then downloads every picture and
+  video thumbnail, so they work with no internet connection.
 - You can change its hotkeys from its own preferences panel.
 - It lets you save your own links for any item. You can save as many links
   as you want.
@@ -138,8 +138,10 @@ data.
    estimate to appear.
 4. If the size is fine for you, click "Download Offline Media Pack".
 5. Wait for the download to finish. It can take a while and use
-   noticeable disk space, depending on how many pictures, GIFs, and
-   videos the registry has.
+   noticeable disk space, depending on how many pictures and video
+   thumbnails the registry has. GIFs are not part of this: a GIF
+   always opens as a link, either in your browser or your system
+   player, so there is nothing to download ahead of time for one.
 6. Click "Clear Downloaded Media" at any time to delete what was
    downloaded and free the disk space back up.
 
@@ -224,8 +226,8 @@ yourself, or use "New Entry" inside Blender instead.
 
 1. Check that Blender's own "Allow Online Access" setting is turned on, in
    Edit, then Preferences, then System. This addon cannot download
-   pictures, GIFs, or video thumbnails while it is off, even if the
-   addon's own "Allow Fetching Media From the Internet" is on.
+   pictures or video thumbnails while it is off, even if the addon's own
+   "Allow Fetching Media From the Internet" is on.
 2. If it still does not show, check the "Currently downloaded" line in
    this addon's preferences, and the System Console (Window, then
    Toggle System Console, on Windows; run Blender from a terminal on
@@ -233,9 +235,9 @@ yourself, or use "New Entry" inside Blender instead.
 3. You can always click "Open Picture in Browser" under a picture that
    will not show, to see it outside Blender.
 
-A GIF only ever shows its first frame in the popup. Blender's popups
-cannot play GIFs or video. Click "Video" under a video entry to watch it
-in your system's player or browser instead.
+A GIF always shows as an "Open GIF" button, never an inline picture.
+Blender's popups cannot play GIFs or video. Click "Open GIF" or "Video"
+to watch either in your system's player or browser instead.
 
 ## How to Report a Problem
 
