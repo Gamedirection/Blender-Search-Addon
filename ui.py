@@ -389,10 +389,13 @@ def _draw_compose_panel(layout, context):
 
     box.separator()
     box.label(text="Locations (Tab through these in the eyedropper)")
+    box.label(text="\"Add by Clicking\" remembers exactly where you clicked, so this")
+    box.label(text="highlights just that spot instead of the whole area.")
     for index, location in enumerate(wm.search_addon_draft_locations):
         row = box.row(align=True)
         row.prop(location, "space_type", text="")
         row.prop(location, "region_type", text="")
+        row.label(text="Precise spot" if location.has_point else "Whole area")
         remove_props = row.operator("searchaddon.remove_draft_location", text="", icon='X')
         remove_props.index = index
         box.prop(location, "ui_path", text="Path")

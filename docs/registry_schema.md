@@ -51,6 +51,13 @@ more than one place (the eyedropper's Tab key cycles through them, see
 - `space_type`: the Blender editor, such as `VIEW_3D`, `PROPERTIES`, `NODE_EDITOR`, or `OUTLINER`.
 - `region_type`: the part of the editor, such as `WINDOW`, `HEADER`, `TOOL_HEADER`, or `UI`. See "Choosing region_type" below.
 - `ui_path`: a short, human path to the item, such as `3D Viewport > Header > Proportional Editing dropdown`.
+- `point` (optional): `{"x": 0.0-1.0, "y": 0.0-1.0}`, how far across and down the
+  region a specific button or icon sits, as a fraction of the region's width
+  and height. When present, the addon highlights a small box there instead of
+  the whole region, and prefers this entry over others in the same region
+  when the eyedropper's cursor is close to it. The New Entry form's "Add by
+  Clicking" button fills this in automatically from where you actually
+  clicked; there is no need to work out the numbers yourself.
 
 Older entries written before this addon supported more than one location
 still work: a single `space_type`, `region_type`, and `ui_path` directly on
@@ -117,9 +124,13 @@ only a way to narrow things down, not a requirement.
 
 ## Choosing region_type
 
-The addon highlights the whole region named by `region_type`, not just one
-button inside it, since Blender does not give addons a reliable way to find
-one button's exact position. Pick the smallest region that is actually true:
+Blender does not give addons a reliable way to ask "what button is under the
+mouse", so the addon cannot look this up on its own. It highlights the whole
+region named by `region_type`, unless the location also has a `point` (see
+"Locations" above), which is filled in automatically when a location is
+added with "Add by Clicking", and highlights just that spot instead. Even
+so, still pick the smallest region that is actually true, since `point` is
+optional and older entries do not have one:
 
 - Use `HEADER` or `TOOL_HEADER` for anything found through a menu or button
   in a header bar. This is correct far more often than not.

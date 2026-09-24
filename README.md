@@ -166,7 +166,10 @@ one for you.
    source link if you have one.
 3. Add every place this shows up. Click "Add by Clicking", then click
    the real spot in Blender, and repeat for any other place it shows
-   up. You can also type the editor and region names in yourself.
+   up. You can also type the editor and region names in yourself. A
+   location added by clicking remembers exactly where you clicked, so
+   it can highlight just that small button or icon later instead of
+   the whole toolbar or panel.
 4. Add any pictures, GIFs, or videos as web links. See "How to Use
    Pictures Without the Internet" above for how these work.
 5. Click "Save Entry". It is saved on your computer, and you can search

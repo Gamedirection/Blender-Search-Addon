@@ -18,6 +18,22 @@ from . import preferences
 from . import media
 from . import ui
 
+_POINT_HIGHLIGHT_HALF_SIZE = 26
+
+
+def _location_rect(region, location):
+    """The box to highlight for one location. Blender does not give addons a
+    reliable way to find one button's exact position, but a location saved
+    with a precise spot (captured by clicking, see SEARCHADDON_OT_pick_location)
+    can highlight a small box there instead of the whole region."""
+    point = (location or {}).get("point")
+    if point:
+        px = point["x"] * region.width
+        py = point["y"] * region.height
+        half = _POINT_HIGHLIGHT_HALF_SIZE
+        return (px - half, py - half, px + half, py + half)
+    return (0, 0, region.width, region.height)
+
 
 class SEARCHADDON_OT_open_search(bpy.types.Operator):
     bl_idname = "searchaddon.open_search"
@@ -55,8 +71,8 @@ class SEARCHADDON_OT_jump_to_entry(bpy.types.Operator):
             or next((r for r in area.regions if r.type == 'WINDOW'), None)
         )
 
-    def _highlight(self, area, region, revert=None):
-        overlay.set_target(region, (0, 0, region.width, region.height), revert=revert)
+    def _highlight(self, area, region, location=None, revert=None):
+        overlay.set_target(region, _location_rect(region, location), revert=revert)
         area.tag_redraw()
         bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
         bpy.ops.searchaddon.watch_highlight('INVOKE_DEFAULT', entry_id=self.entry_id, duration=4.0)
@@ -77,7 +93,7 @@ class SEARCHADDON_OT_jump_to_entry(bpy.types.Operator):
                     region = self._find_region(area, location["region_type"])
                     if region is None:
                         continue
-                    self._highlight(area, region)
+                    self._highlight(area, region, location=location)
                     self.report({'INFO'}, "Highlighted: " + entry["title"])
                     return {'FINISHED'}
 
@@ -92,7 +108,7 @@ class SEARCHADDON_OT_jump_to_entry(bpy.types.Operator):
                 target_area.type = location["space_type"]
                 region = self._find_region(target_area, location["region_type"])
                 if region is not None:
-                    self._highlight(target_area, region, revert=(target_area, previous_type))
+                    self._highlight(target_area, region, location=location, revert=(target_area, previous_type))
                     self.report({'INFO'}, "Revealed: " + entry["title"])
                     return {'FINISHED'}
                 target_area.type = previous_type
@@ -193,6 +209,7 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         self._timer = wm.event_timer_add(0.1, window=context.window)
         self._hover_area = None
         self._hover_region = None
+        self._hover_point = None
         self._hover_start = 0.0
         self._shown_for = None
         self._item_index = 0
@@ -219,6 +236,13 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
                 self._shown_for = None
                 self._item_index = 0
                 self._active_entry_id = None
+            if region is not None and region.width > 0 and region.height > 0:
+                self._hover_point = (
+                    (event.mouse_x - region.x) / region.width,
+                    (event.mouse_y - region.y) / region.height,
+                )
+            else:
+                self._hover_point = None
 
         if event.type == 'TAB' and event.value == 'PRESS':
             if event.shift:
@@ -249,6 +273,38 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
 
         return {'PASS_THROUGH'}
 
+    def _ordered_by_proximity(self, matches):
+        """When several documented items share this same area, show whichever
+        one has a precise spot (see SEARCHADDON_OT_pick_location) closest to
+        the cursor first, instead of an arbitrary order. Entries with no
+        precise spot for this area sort after ones that have one."""
+        if self._hover_point is None or self._hover_area is None or self._hover_region is None:
+            return matches
+        space_type = self._hover_area.type
+        region_type = self._hover_region.type
+        hx, hy = self._hover_point
+
+        def distance(entry):
+            best = None
+            for location in entry["locations"]:
+                if location["space_type"] != space_type or location["region_type"] != region_type:
+                    continue
+                point = location.get("point")
+                if point is None:
+                    continue
+                d = (point["x"] - hx) ** 2 + (point["y"] - hy) ** 2
+                if best is None or d < best:
+                    best = d
+            return best if best is not None else float("inf")
+
+        return sorted(matches, key=distance)
+
+    def _current_matches(self):
+        if self._hover_area is None or self._hover_region is None:
+            return []
+        matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
+        return self._ordered_by_proximity(matches)
+
     def _current_reference_entry(self):
         """The entry Tab and Shift+Tab both treat as "the one you are looking at"."""
         if self._active_entry_id is not None:
@@ -256,18 +312,14 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
             if entry is not None:
                 return entry
 
-        if self._hover_area is None or self._hover_region is None:
-            return None
-        matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
+        matches = self._current_matches()
         if not matches:
             return None
         return matches[self._item_index % len(matches)]
 
     def _cycle_item(self, context):
         """Shift+Tab: the other items documented in the area under the cursor."""
-        if self._hover_area is None or self._hover_region is None:
-            return
-        matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
+        matches = self._current_matches()
         if not matches:
             return
         self._item_index = (self._item_index + 1) % len(matches)
@@ -300,21 +352,28 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         if area is None or region is None:
             return
 
-        matches = registry.entries_for_space(area.type, region.type)
+        matches = self._current_matches()
         if not matches:
             return
 
         index = self._item_index % len(matches)
         entry = matches[index]
-        exact = any(
-            location["space_type"] == area.type and location["region_type"] == region.type
-            for location in entry["locations"]
+        matched_location = next(
+            (
+                location for location in entry["locations"]
+                if location["space_type"] == area.type and location["region_type"] == region.type
+            ),
+            None,
         )
         footer = None
         if len(matches) > 1:
             footer = f"Shift+Tab for more items here ({index + 1} of {len(matches)})"
 
-        self._display_entry(context, entry, exact, footer)
+        self._display_entry(context, entry, matched_location is not None, footer)
+        if matched_location is not None:
+            overlay.set_target(region, _location_rect(region, matched_location))
+            area.tag_redraw()
+            bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
 
     def _show_place(self, context, entry, index, total):
         footer = None
@@ -352,7 +411,7 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
                     )
                     if region is None:
                         continue
-                    overlay.set_target(region, (0, 0, region.width, region.height))
+                    overlay.set_target(region, _location_rect(region, location))
                     area.tag_redraw()
                     bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
                     return
@@ -550,6 +609,11 @@ def _load_entry_into_draft(context, entry):
         item.space_type = location.get("space_type", "")
         item.region_type = location.get("region_type", "WINDOW")
         item.ui_path = location.get("ui_path", "")
+        point = location.get("point")
+        if point:
+            item.has_point = True
+            item.point_x = point.get("x", 0.5)
+            item.point_y = point.get("y", 0.5)
 
     for url in entry.get("images", []):
         item = wm.search_addon_draft_links.add()
@@ -654,6 +718,10 @@ class SEARCHADDON_OT_pick_location(bpy.types.Operator):
                 item = context.window_manager.search_addon_draft_locations.add()
                 item.space_type = area.type
                 item.region_type = region.type
+                if region.width > 0 and region.height > 0:
+                    item.has_point = True
+                    item.point_x = min(1.0, max(0.0, (event.mouse_x - region.x) / region.width))
+                    item.point_y = min(1.0, max(0.0, (event.mouse_y - region.y) / region.height))
                 _redraw_all(context.window_manager)
             return {'FINISHED'}
 
@@ -730,11 +798,14 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
         for location in wm.search_addon_draft_locations:
             if not location.space_type:
                 continue
-            locations.append({
+            location_dict = {
                 "space_type": location.space_type,
                 "region_type": location.region_type or "WINDOW",
                 "ui_path": location.ui_path.strip(),
-            })
+            }
+            if location.has_point:
+                location_dict["point"] = {"x": location.point_x, "y": location.point_y}
+            locations.append(location_dict)
         if not locations:
             self.report({'ERROR'}, "Add at least one location")
             return {'CANCELLED'}

@@ -6,6 +6,22 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-09-24
+
+### Added
+- "Add by Clicking" in the New Entry form now remembers exactly where
+  in the region you clicked, not only which region. Locations added
+  this way highlight a small box around that precise spot instead of
+  the whole toolbar or panel, both when jumping to a search result and
+  in the eyedropper. This is the closest this addon can get to
+  selecting one small button or icon, since Blender does not give
+  addons a reliable way to ask what is directly under the mouse.
+- When more than one documented item shares an area, the eyedropper
+  now prefers whichever one has a precise spot closest to the cursor,
+  instead of an arbitrary order.
+- Locations added manually, or from before this addon supported precise
+  spots, are unaffected and keep highlighting the whole region.
+
 ## [0.7.1] - 2026-09-24
 
 ### Added

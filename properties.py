@@ -1,13 +1,20 @@
 # SPDX-License-Identifier: MIT
 import bpy
 from bpy.types import PropertyGroup, WindowManager
-from bpy.props import BoolProperty, StringProperty, CollectionProperty
+from bpy.props import BoolProperty, StringProperty, FloatProperty, CollectionProperty
 
 
 class SearchAddonDraftLocation(PropertyGroup):
     space_type: StringProperty(name="Editor")
     region_type: StringProperty(name="Region", default="WINDOW")
     ui_path: StringProperty(name="Path", description="A short, human path to this spot, such as \"3D Viewport > Header > Mesh menu\"")
+    has_point: BoolProperty(
+        name="Has a Precise Spot",
+        description="Whether this location remembers exactly where in the region you clicked",
+        default=False,
+    )
+    point_x: FloatProperty(default=0.5, min=0.0, max=1.0)
+    point_y: FloatProperty(default=0.5, min=0.0, max=1.0)
 
 
 class SearchAddonDraftLink(PropertyGroup):
