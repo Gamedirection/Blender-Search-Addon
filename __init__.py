@@ -2,7 +2,7 @@
 bl_info = {
     "name": "Blender Search",
     "author": "GameDirection",
-    "version": (0, 4, 0),
+    "version": (0, 5, 0),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Search",
     "description": "Search Blender's interface, inspect elements with an eyedropper, and save your own links.",

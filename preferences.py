@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 import bpy
 from bpy.types import AddonPreferences
-from bpy.props import FloatVectorProperty, BoolProperty
+from bpy.props import FloatVectorProperty, BoolProperty, IntProperty
 
 
 def get_prefs(context=None):
@@ -32,6 +32,14 @@ class SearchAddonPreferences(AddonPreferences):
         default=False,
     )
 
+    recent_limit: IntProperty(
+        name="Recent Searches to Show",
+        description="How many of your most recent searches to list",
+        default=5,
+        min=1,
+        max=50,
+    )
+
     show_images: BoolProperty(
         name="Images",
         description="Show bundled pictures in the info popup",
@@ -60,6 +68,7 @@ class SearchAddonPreferences(AddonPreferences):
         layout = self.layout
         layout.prop(self, "highlight_color")
         layout.prop(self, "auto_reveal_offscreen")
+        layout.prop(self, "recent_limit")
 
         layout.separator()
         layout.label(text="Media in Popups")

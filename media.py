@@ -33,7 +33,11 @@ pack_state = {
 
 
 def _cache_dir():
-    return Path(bpy.utils.user_resource('CACHE', path="blender_search_addon", create=True))
+    # 'CACHE' is not a valid bpy.utils.user_resource() type (confirmed on
+    # Blender 4.4: only 'DATAFILES', 'CONFIG', 'SCRIPTS', 'EXTENSIONS' are
+    # accepted). Use a subfolder under 'CONFIG' instead, kept separate from
+    # storage.py's personal_links.json and search_state.json.
+    return Path(bpy.utils.user_resource('CONFIG', path="blender_search_addon/media_cache", create=True))
 
 
 def _cache_key(url):

@@ -26,7 +26,7 @@ Each file holds one JSON object with two fields.
 | `title` | Yes | text | The name shown to the user. |
 | `category` | Yes | text | A short group name, such as `modeling` or `shading`. |
 | `space_type` | Yes | text | The Blender editor this item lives in, such as `VIEW_3D`, `PROPERTIES`, `NODE_EDITOR`, or `OUTLINER`. |
-| `region_type` | Yes | text | The part of the editor, such as `WINDOW`, `HEADER`, `TOOL_HEADER`, or `UI`. |
+| `region_type` | Yes | text | The part of the editor, such as `WINDOW`, `HEADER`, `TOOL_HEADER`, or `UI`. See the note below. |
 | `ui_path` | Yes | text | A short, human path to the item, such as `3D Viewport > Header > Proportional Editing dropdown`. |
 | `description` | Yes | text | A short, clear explanation of what the item does. |
 | `manual_url` | Yes | text | A link to the matching page on `docs.blender.org`. |
@@ -89,6 +89,21 @@ nothing after the pipe lists every entry in that category.
 
 Searching without a pipe still searches every category at once. The pipe is
 only a way to narrow things down, not a requirement.
+
+## Choosing region_type
+
+The addon highlights the whole region named by `region_type`, not just one
+button inside it, since Blender does not give addons a reliable way to find
+one button's exact position. Pick the smallest region that is actually true:
+
+- Use `HEADER` or `TOOL_HEADER` for anything found through a menu or button
+  in a header bar. This is correct far more often than not.
+- Use `UI` for something in a sidebar tab (the panel opened with N).
+- Only use `WINDOW` for something that is genuinely about the whole working
+  area, such as a general modeling or sculpting concept. `WINDOW` in the 3D
+  Viewport highlights the entire viewport, which is rarely what you want,
+  even for something started with a keyboard shortcut like Extrude's E key.
+  Point contributors instead at the menu or header item used to reach it.
 
 ## Worked Example
 

@@ -20,8 +20,19 @@ class SEARCHADDON_OT_open_search(bpy.types.Operator):
     bl_label = "Search Blender"
     bl_description = "Search for a documented Blender feature, panel, or setting"
 
+    # A plain popover's draw function does not reliably redraw on every
+    # keystroke. An operator-owned property inside invoke_popup does, since
+    # Blender re-runs draw() after every property change while it is open.
+    query: StringProperty(name="Search", default="", options={'SKIP_SAVE'})
+
     def invoke(self, context, event):
-        context.window_manager.popover(ui.draw_search_popover, ui_units_x=20)
+        self.query = ""
+        return context.window_manager.invoke_popup(self, width=400)
+
+    def draw(self, context):
+        ui.draw_search_popup(self, context)
+
+    def execute(self, context):
         return {'FINISHED'}
 
 
@@ -250,6 +261,14 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         if getattr(self, "_timer", None) is not None:
             context.window_manager.event_timer_remove(self._timer)
             self._timer = None
+
+        # Redraw right away so the sidebar's toggle button un-presses and the
+        # cursor change is visible immediately, instead of waiting for the
+        # next unrelated redraw.
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                area.tag_redraw()
+
         return {'CANCELLED'}
 
 

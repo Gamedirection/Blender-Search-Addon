@@ -14,7 +14,7 @@ import bpy
 _LINKS_FILE_NAME = "personal_links.json"
 _STATE_FILE_NAME = "search_state.json"
 _SCHEMA_VERSION = 1
-_RECENT_LIMIT = 15
+_RECENT_LIMIT = 50
 
 
 def _data_dir():

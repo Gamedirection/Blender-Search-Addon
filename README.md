@@ -64,8 +64,9 @@ on Windows, macOS, and Linux.
 4. Click the search button.
 5. If you leave the box empty, you see three groups: Favorite, Recent,
    and On-Screen (items whose editor is already open). Type part of a
-   name to search everything instead. Search also looks at each item's
-   category and tags, not only its title.
+   name to search everything instead. The list updates as you type.
+   Search also looks at each item's category and tags, not only its
+   title.
    - Type `category|term` to search inside one category only. For
      example, `modeling|extrude` only looks inside the modeling
      category. Type `modeling|` with nothing after the pipe to list
@@ -81,6 +82,11 @@ open. It does not move or open a new editor for you, unless you turn on
 "Reveal Off-Screen Items Automatically" in the addon's preferences. When
 that setting is on, the addon switches your largest open area to show
 the item, then switches it back after a few seconds.
+
+The "Search" tab in the side panel also has its own Favorites and
+Recent sections. Click either heading to show or hide its list without
+opening the full search popup. The addon's preferences let you choose
+how many recent searches to remember, up to 50.
 
 ## How to Use the Eyedropper Tool
 

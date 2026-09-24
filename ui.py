@@ -58,9 +58,17 @@ def _icon_id_for_url(url):
 
 
 def _draw_media_thumbnail(layout, source, note=None):
-    """Draw one picture, whether it comes from a URL or a path bundled with the addon."""
+    """Draw one picture, whether it comes from a URL or a path bundled with the addon.
+
+    A media failure (a bad cache path, a network hiccup, anything) must never
+    take down the whole info popup, so every real step here is guarded.
+    """
     is_remote = source.startswith("http://") or source.startswith("https://")
-    icon_id = _icon_id_for_url(source) if is_remote else _icon_id_from_bundled(source)
+
+    try:
+        icon_id = _icon_id_for_url(source) if is_remote else _icon_id_from_bundled(source)
+    except Exception:
+        icon_id = 0
 
     if icon_id:
         layout.template_icon(icon_value=icon_id, scale=6.0)
@@ -171,6 +179,11 @@ def _open_space_types(context):
     return types
 
 
+def _recent_limit(context=None):
+    prefs = preferences.get_prefs(context)
+    return prefs.recent_limit if prefs is not None else 5
+
+
 def _draw_grouped_results(layout, context):
     shown_ids = set()
 
@@ -182,7 +195,8 @@ def _draw_grouped_results(layout, context):
             _draw_result_row(layout, entry)
             shown_ids.add(entry["id"])
 
-    recent_entries = [registry.get(i) for i in storage.recent() if i not in shown_ids]
+    recent_ids = storage.recent(limit=_recent_limit(context))
+    recent_entries = [registry.get(i) for i in recent_ids if i not in shown_ids]
     recent_entries = [e for e in recent_entries if e is not None]
     if recent_entries:
         layout.label(text="Recent", icon='RECOVER_LAST')
@@ -205,12 +219,16 @@ def _draw_grouped_results(layout, context):
         layout.label(text="Type to search, or favorite items to see them here", icon='INFO')
 
 
-def draw_search_popover(popup_self, context):
-    wm = context.window_manager
-    layout = popup_self.layout
-    layout.prop(wm, "search_addon_query", text="", icon='VIEWZOOM')
+def draw_search_popup(op, context):
+    """Draw the search dialog's contents. `op` is the SEARCHADDON_OT_open_search
+    instance invoking this, since its `query` property is what live-updates as
+    the user types (a plain popover's draw function does not reliably redraw
+    on every keystroke the way a dialog operator's draw() does).
+    """
+    layout = op.layout
+    layout.prop(op, "query", text="", icon='VIEWZOOM')
 
-    query = wm.search_addon_query.strip()
+    query = op.query.strip()
     if not query:
         _draw_grouped_results(layout, context)
         return
@@ -232,13 +250,48 @@ class SEARCHADDON_PT_sidebar(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        wm = context.window_manager
+
         layout.operator("searchaddon.open_search", icon='VIEWZOOM')
         layout.operator(
             "searchaddon.eyedropper",
             icon='EYEDROPPER',
-            depress=context.window_manager.search_addon_eyedropper_active,
+            depress=wm.search_addon_eyedropper_active,
         )
         layout.operator("searchaddon.report_issue", icon='URL')
+
+        layout.separator()
+
+        row = layout.row()
+        row.prop(
+            wm, "search_addon_show_favorites", text="Favorites",
+            icon='TRIA_DOWN' if wm.search_addon_show_favorites else 'TRIA_RIGHT',
+            emboss=False,
+        )
+        if wm.search_addon_show_favorites:
+            favorite_entries = [registry.get(i) for i in storage.favorites()]
+            favorite_entries = [e for e in favorite_entries if e is not None]
+            if favorite_entries:
+                for entry in favorite_entries:
+                    _draw_result_row(layout, entry)
+            else:
+                layout.label(text="No favorites yet", icon='INFO')
+
+        row = layout.row()
+        row.prop(
+            wm, "search_addon_show_recent", text="Recent",
+            icon='TRIA_DOWN' if wm.search_addon_show_recent else 'TRIA_RIGHT',
+            emboss=False,
+        )
+        if wm.search_addon_show_recent:
+            recent_ids = storage.recent(limit=_recent_limit(context))
+            recent_entries = [registry.get(i) for i in recent_ids]
+            recent_entries = [e for e in recent_entries if e is not None]
+            if recent_entries:
+                for entry in recent_entries:
+                    _draw_result_row(layout, entry)
+            else:
+                layout.label(text="No recent searches yet", icon='INFO')
 
 
 def _draw_help_menu(self, context):

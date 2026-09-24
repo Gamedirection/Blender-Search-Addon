@@ -6,6 +6,33 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-24
+
+### Fixed
+- The media cache crashed on every picture, GIF, and video thumbnail,
+  because `'CACHE'` is not a valid `bpy.utils.user_resource()` type on
+  Blender 4.4. This also took down the whole info popup, not only the
+  picture. Media loading is now wrapped so a failure only affects that
+  one picture.
+- The search popup was not updating live as the user typed, because a
+  plain popover's draw function does not reliably redraw on every
+  keystroke. The search box is now a proper dialog operator, which does.
+- Highlighting Extrude (and a few other items) covered the entire 3D
+  Viewport instead of just where the item lives, because their registry
+  entries used the `WINDOW` region instead of the header. Fixed for
+  Point Light, Extrude, and Twisted Extrude, and documented in
+  `docs/registry_schema.md` so future entries pick the right region.
+- Pressing Escape while the eyedropper is on now redraws right away, so
+  the sidebar button and the cursor update immediately instead of
+  looking like the eyedropper is still on.
+
+### Added
+- A preference for how many recent searches to remember and show, from
+  1 to 50 (default 5), used everywhere recent searches are listed.
+- Favorites and Recent are now also directly toggleable in the Search
+  sidebar panel in the 3D Viewport, without opening the full search
+  popup.
+
 ## [0.4.0] - 2026-09-24
 
 ### Added
