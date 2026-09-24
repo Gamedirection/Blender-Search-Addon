@@ -31,6 +31,8 @@ Each file holds one JSON object with two fields.
 | `description` | Yes | text | A short, clear explanation of what the item does. |
 | `manual_url` | Yes | text | A link to the matching page on `docs.blender.org`. |
 | `images` | No | list of text | Paths to pictures under the `resources/images` folder. |
+| `gifs` | No | list of text | Paths to GIF files under the `resources/images` folder. Only the first frame shows in the popup. |
+| `videos` | No | list of text | Paths to video files under the `resources` folder. Shown as a "Play Video" button that opens in the system player. |
 | `keywords` | No | list of text | Extra words people might search for. |
 | `rna_hint` | No | object | Optional. Holds `operator` and `property` values, kept for future use by more precise matching. |
 

@@ -1,45 +1,26 @@
 # SPDX-License-Identifier: MIT
-"""Operators: search popup, jump to result, eyedropper, and personal links."""
+"""Operators: search popup, jump to result, eyedropper, favorites, and personal links."""
 
 import time
+from pathlib import Path
 
 import bpy
-from bpy.props import StringProperty, IntProperty, FloatProperty, EnumProperty
+from bpy.props import StringProperty, IntProperty, FloatProperty
 
 from . import registry
 from . import storage
 from . import overlay
+from . import preferences
 from . import ui
-
-_ENUM_CACHE = []
-
-
-def _search_items(self, context):
-    # Kept in a module-level list on purpose: Blender frees a dynamic enum's
-    # items if nothing else holds a reference to them.
-    global _ENUM_CACHE
-    entries = sorted(registry.all_entries().values(), key=lambda entry: entry["title"])
-    _ENUM_CACHE = [
-        (entry["id"], entry["title"], (entry.get("description") or "")[:200])
-        for entry in entries
-    ]
-    return _ENUM_CACHE
 
 
 class SEARCHADDON_OT_open_search(bpy.types.Operator):
     bl_idname = "searchaddon.open_search"
     bl_label = "Search Blender"
     bl_description = "Search for a documented Blender feature, panel, or setting"
-    bl_property = "entry_id"
-
-    entry_id: EnumProperty(name="Result", items=_search_items)
-
-    def execute(self, context):
-        bpy.ops.searchaddon.jump_to_entry('INVOKE_DEFAULT', entry_id=self.entry_id)
-        return {'FINISHED'}
 
     def invoke(self, context, event):
-        context.window_manager.invoke_search_popup(self)
+        context.window_manager.popover(ui.draw_search_popover, ui_units_x=20)
         return {'FINISHED'}
 
 
@@ -51,28 +32,52 @@ class SEARCHADDON_OT_jump_to_entry(bpy.types.Operator):
 
     entry_id: StringProperty()
 
+    @staticmethod
+    def _find_region(area, region_type):
+        return (
+            next((r for r in area.regions if r.type == region_type), None)
+            or next((r for r in area.regions if r.type == 'WINDOW'), None)
+        )
+
+    def _highlight(self, area, region, revert=None):
+        overlay.set_target(region, (0, 0, region.width, region.height), revert=revert)
+        area.tag_redraw()
+        bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
+        bpy.ops.searchaddon.watch_highlight('INVOKE_DEFAULT', entry_id=self.entry_id, duration=4.0)
+
     def execute(self, context):
         entry = registry.get(self.entry_id)
         if entry is None:
             self.report({'ERROR'}, "That item is no longer in the registry")
             return {'CANCELLED'}
 
+        storage.record_recent(entry["id"])
+
         for window in context.window_manager.windows:
             for area in window.screen.areas:
                 if area.type != entry["space_type"]:
                     continue
-                region = next((r for r in area.regions if r.type == entry["region_type"]), None)
-                if region is None:
-                    region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+                region = self._find_region(area, entry["region_type"])
                 if region is None:
                     continue
-
-                overlay.set_target(region, (0, 0, region.width, region.height))
-                area.tag_redraw()
-                bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
-                bpy.ops.searchaddon.watch_highlight('INVOKE_DEFAULT', entry_id=entry["id"], duration=4.0)
+                self._highlight(area, region)
                 self.report({'INFO'}, "Highlighted: " + entry["title"])
                 return {'FINISHED'}
+
+        prefs = preferences.get_prefs(context)
+        if prefs is not None and prefs.auto_reveal_offscreen:
+            window = context.window
+            areas = list(window.screen.areas) if window else []
+            if areas:
+                target_area = max(areas, key=lambda a: a.width * a.height)
+                previous_type = target_area.type
+                target_area.type = entry["space_type"]
+                region = self._find_region(target_area, entry["region_type"])
+                if region is not None:
+                    self._highlight(target_area, region, revert=(target_area, previous_type))
+                    self.report({'INFO'}, "Revealed: " + entry["title"])
+                    return {'FINISHED'}
+                target_area.type = previous_type
 
         editor_name = entry["space_type"].replace("_", " ").title()
         self.report({'WARNING'}, "Open the " + editor_name + " editor to see this")
@@ -149,7 +154,7 @@ def _area_region_at(context, mouse_x, mouse_y):
 class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
     bl_idname = "searchaddon.eyedropper"
     bl_label = "Eyedropper"
-    bl_description = "Hover over Blender's interface to learn about the nearest documented item"
+    bl_description = "Hover over Blender's interface to learn about the nearest documented item. Press Tab to see other matches in the same area"
 
     def invoke(self, context, event):
         wm = context.window_manager
@@ -165,6 +170,7 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         self._hover_region = None
         self._hover_start = 0.0
         self._shown_for = None
+        self._match_index = 0
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -185,6 +191,17 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
                 self._hover_region = region
                 self._hover_start = time.monotonic()
                 self._shown_for = None
+                self._match_index = 0
+
+        if event.type == 'TAB' and event.value == 'PRESS':
+            if self._hover_region is not None:
+                matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
+                if matches:
+                    self._match_index = (self._match_index + 1) % len(matches)
+                    self._shown_for = None
+                    self._show_popup(context)
+            # Consume Tab so Blender does not also toggle Edit Mode underneath.
+            return {'RUNNING_MODAL'}
 
         if (
             event.type == 'TIMER'
@@ -207,11 +224,19 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         if not matches:
             return
 
-        entry = matches[0]
-        exact = len(matches) == 1 and region.type == entry.get("region_type")
+        index = self._match_index % len(matches)
+        entry = matches[index]
+        exact = region.type == entry.get("region_type")
+        more_available = len(matches) > 1
 
-        def draw(popup_self, popup_context, entry=entry, exact=exact):
+        def draw(popup_self, popup_context, entry=entry, exact=exact,
+                 more=more_available, shown_index=index, total=len(matches)):
             ui.draw_entry_info(popup_self.layout, entry, exact=exact)
+            if more:
+                popup_self.layout.label(
+                    text=f"Press Tab for more matches here ({shown_index + 1} of {total})",
+                    icon='TRIA_RIGHT',
+                )
 
         context.window_manager.popover(draw, ui_units_x=16)
 
@@ -225,6 +250,36 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
             context.window_manager.event_timer_remove(self._timer)
             self._timer = None
         return {'CANCELLED'}
+
+
+class SEARCHADDON_OT_toggle_favorite(bpy.types.Operator):
+    bl_idname = "searchaddon.toggle_favorite"
+    bl_label = "Toggle Favorite"
+    bl_description = "Add or remove this item from your favorites"
+    bl_options = {'INTERNAL'}
+
+    entry_id: StringProperty(options={'HIDDEN'})
+
+    def execute(self, context):
+        storage.toggle_favorite(self.entry_id)
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_play_video(bpy.types.Operator):
+    bl_idname = "searchaddon.play_video"
+    bl_label = "Play Video"
+    bl_description = "Open this video with your system's default player"
+    bl_options = {'INTERNAL'}
+
+    relative_path: StringProperty(options={'HIDDEN'})
+
+    def execute(self, context):
+        path = Path(__file__).parent / "resources" / self.relative_path
+        if not path.exists():
+            self.report({'ERROR'}, "Video file not found")
+            return {'CANCELLED'}
+        bpy.ops.wm.path_open(filepath=str(path))
+        return {'FINISHED'}
 
 
 class SEARCHADDON_OT_add_personal_link(bpy.types.Operator):
@@ -283,6 +338,8 @@ classes = (
     SEARCHADDON_OT_jump_to_entry,
     SEARCHADDON_OT_watch_highlight,
     SEARCHADDON_OT_eyedropper,
+    SEARCHADDON_OT_toggle_favorite,
+    SEARCHADDON_OT_play_video,
     SEARCHADDON_OT_add_personal_link,
     SEARCHADDON_OT_remove_personal_link,
     SEARCHADDON_OT_report_issue,

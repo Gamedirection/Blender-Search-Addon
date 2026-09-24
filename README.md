@@ -6,12 +6,17 @@ parts of Blender's user interface.
 ## What This Addon Does
 
 - It gives you a search bar. You can search for menus, panels, and
-  settings.
+  settings. You can find it in the side panel or in Blender's Help menu.
 - It highlights the item you find. The addon uses a yellow color by
   default. You can change this color.
 - It gives you an eyedropper tool. Point at a part of Blender. The addon
-  shows you information about it.
+  shows you information about it. Press Tab to see other matches in the
+  same area.
+- It lets you mark any item as a favorite with a star, and it remembers
+  items you searched for recently.
 - It shows a link to the official Blender manual for many items.
+- It can show pictures, GIFs, and videos for an item, if the item has
+  them. You can turn each of these off in the addon's preferences.
 - It lets you save your own links for any item. You can save as many links
   as you want.
 - It gives you a button to report a problem or a missing item.
@@ -47,16 +52,23 @@ on Windows, macOS, and Linux.
 
 1. Open the 3D Viewport.
 2. Open the side panel. Press N if it is not open.
-3. Click the "Search" tab.
+3. Click the "Search" tab. You can also open the search bar from
+   Blender's Help menu, under "Search Blender".
 4. Click the search button.
-5. Type part of the name you want to find.
-6. Click a result from the list.
-7. The addon highlights the item in yellow, if its editor is open.
-8. Hover over the highlighted area. A popup shows a description, any
+5. If you leave the box empty, you see three groups: Favorite, Recent,
+   and On-Screen (items whose editor is already open). Type part of a
+   name to search everything instead.
+6. Click the star next to a result to add or remove it as a favorite.
+7. Click a result from the list.
+8. The addon highlights the item in yellow, if its editor is open.
+9. Hover over the highlighted area. A popup shows a description, any
    pictures, and a link to the Blender manual.
 
 If the item's editor is not open, the addon tells you which editor to
-open. It does not open or move any editor for you.
+open. It does not move or open a new editor for you, unless you turn on
+"Reveal Off-Screen Items Automatically" in the addon's preferences. When
+that setting is on, the addon switches your largest open area to show
+the item, then switches it back after a few seconds.
 
 ## How to Use the Eyedropper Tool
 
@@ -65,12 +77,15 @@ open. It does not open or move any editor for you.
 3. Move your mouse over any part of Blender's interface.
 4. Wait for a moment. A popup appears.
 5. The popup names the closest item the addon knows about in that area.
-6. Click the eyedropper button again to turn it off. You can also press
+6. If more than one item matches that area, press Tab to see the next
+   one. The popup tells you how many matches there are.
+7. Click the eyedropper button again to turn it off. You can also press
    Escape or right-click.
 
 The eyedropper cannot always name the exact button under your mouse.
 Blender does not give addons that information for every button. When the
-addon is not sure, it tells you the closest known item in that area.
+addon is not sure, it tells you the closest known item in that area. Use
+Tab to check the other items it found in that same area.
 
 ## How to Add Your Own Links
 

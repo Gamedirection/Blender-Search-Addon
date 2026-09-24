@@ -6,6 +6,7 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 
 from . import registry
+from . import preferences
 
 _SPACE_CLASSES = {
     'VIEW_3D': bpy.types.SpaceView3D,
@@ -17,12 +18,14 @@ _SPACE_CLASSES = {
 }
 
 _handlers = []
-_target = {"region": None, "rect": None}
+_target = {"region": None, "rect": None, "revert": None}
 
 
-def set_target(region, rect):
+def set_target(region, rect, revert=None):
+    """Show the highlight. `revert`, if given, is (area, previous_type) to restore on clear."""
     _target["region"] = region
     _target["rect"] = rect
+    _target["revert"] = revert
     region.tag_redraw()
 
 
@@ -32,9 +35,18 @@ def get_target_region():
 
 def clear_target():
     region = _target["region"]
+    revert = _target["revert"]
     _target["region"] = None
     _target["rect"] = None
-    if region is not None:
+    _target["revert"] = None
+
+    if revert is not None:
+        area, previous_type = revert
+        try:
+            area.type = previous_type
+        except (ReferenceError, AttributeError):
+            pass
+    elif region is not None:
         try:
             region.tag_redraw()
         except ReferenceError:
@@ -43,10 +55,10 @@ def clear_target():
 
 
 def _highlight_color():
-    prefs_entry = bpy.context.preferences.addons.get(__package__)
-    if prefs_entry is None:
+    prefs = preferences.get_prefs()
+    if prefs is None:
         return (1.0, 0.9, 0.0, 0.6)
-    return tuple(prefs_entry.preferences.highlight_color)
+    return tuple(prefs.highlight_color)
 
 
 def _draw():
