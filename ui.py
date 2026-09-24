@@ -23,23 +23,39 @@ def _preview_collection():
     return pcoll
 
 
-def _load_preview(key, path):
+def _get_or_start_preview(key, path):
+    """The previews.PreviewImage for this key, creating it if needed.
+
+    Returns None if the file does not exist, or previews.load() itself
+    raised. A returned preview is not proof it is ready to show; Blender
+    assigns a preview object, and a non-zero icon_id, right away, before it
+    has actually generated any thumbnail pixels.
+    """
     pcoll = _preview_collection()
-    if key in pcoll:
-        return pcoll[key].icon_id
+    preview = pcoll.get(key)
+    if preview is not None:
+        return preview
     if not path.exists():
-        return 0
+        return None
     try:
-        return pcoll.load(key, str(path), 'IMAGE').icon_id
+        return pcoll.load(key, str(path), 'IMAGE')
     except Exception as error:
         print(f"[Blender Search] Could not display {path}: {error}")
+        return None
+
+
+def _icon_id_from_preview(preview):
+    """0 until image_size is real, since a non-zero icon_id alone does not
+    mean Blender has actually generated thumbnail pixels for it yet."""
+    if preview is None:
         return 0
+    if tuple(preview.image_size) == (0, 0):
+        return 0
+    return preview.icon_id
 
 
-def _icon_id_from_bundled(relative_path):
-    """Load a picture bundled with the addon under resources/. Only shows the first frame of a GIF."""
-    path = Path(__file__).parent / "resources" / relative_path
-    return _load_preview(relative_path, path)
+def _load_preview(key, path):
+    return _icon_id_from_preview(_get_or_start_preview(key, path))
 
 
 _last_logged_state = {}
@@ -48,15 +64,22 @@ _last_logged_state = {}
 def _icon_id_for_url(url):
     """Load a cached picture for this URL. Only shows the first frame of a GIF.
 
-    Returns (icon_id, state), where state is "ready", "loading", "failed", or
-    "blocked" (Blender's own "Allow Online Access" preference is off). If
-    internet media is allowed, a cache miss also starts a background download
-    so it is ready next time.
+    Returns (icon_id, state), where state is "ready", "loading", "rendering"
+    (the file is downloaded and handed to Blender, which has not finished
+    generating a thumbnail from it), "failed", or "blocked" (Blender's own
+    "Allow Online Access" preference is off). If internet media is allowed,
+    a cache miss also starts a background download so it is ready next time.
     """
     path = media.cache_path(url)
     if path.exists():
-        icon_id = _load_preview(url, path)
-        state = "ready" if icon_id else "failed"
+        preview = _get_or_start_preview(url, path)
+        icon_id = _icon_id_from_preview(preview)
+        if icon_id:
+            state = "ready"
+        elif preview is not None:
+            state = "rendering"
+        else:
+            state = "failed"
     else:
         icon_id = 0
         prefs = preferences.get_prefs()
@@ -92,8 +115,15 @@ def _draw_media_thumbnail(layout, source, note=None):
         if is_remote:
             icon_id, state = _icon_id_for_url(source)
         else:
-            icon_id = _icon_id_from_bundled(source)
-            state = "ready" if icon_id else "failed"
+            path = Path(__file__).parent / "resources" / source
+            preview = _get_or_start_preview(source, path)
+            icon_id = _icon_id_from_preview(preview)
+            if icon_id:
+                state = "ready"
+            elif preview is not None:
+                state = "rendering"
+            else:
+                state = "failed"
     except Exception as error:
         print(f"[Blender Search] Could not show picture {source}: {error}")
         icon_id, state = 0, "failed"
@@ -105,13 +135,18 @@ def _draw_media_thumbnail(layout, source, note=None):
         return
 
     if not is_remote:
-        layout.label(text="Picture not found: " + source, icon='ERROR')
+        if state == "rendering":
+            layout.label(text="Generating thumbnail...")
+        else:
+            layout.label(text="Picture not found: " + source, icon='ERROR')
         return
 
     if state == "blocked":
         layout.label(text="Internet access for pictures is off.", icon='INFO')
     elif state == "failed":
         layout.label(text="Could not load this picture.", icon='ERROR')
+    elif state == "rendering":
+        layout.label(text="Generating thumbnail...")
     else:
         layout.label(text="Loading picture...")
     props = layout.operator("wm.url_open", text="Open Picture in Browser", icon='URL')

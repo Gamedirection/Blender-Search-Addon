@@ -107,17 +107,33 @@ def _download_one(url):
     return True
 
 
-def _prewarm_preview(url):
+def _schedule_prewarm(url, max_attempts=10):
     """Ask Blender to generate this picture's thumbnail right away, on the
     main thread, instead of waiting for the next time a popup happens to
     draw it. A popup can be too short-lived to give Blender's own preview
-    generation time to finish on its very first request."""
-    from . import ui
+    generation time to finish on its very first request, so this keeps
+    checking for a few seconds rather than trying only once.
 
-    path = cache_path(url)
-    if path.exists():
-        ui._load_preview(url, path)
-    return None
+    Returning a number from a bpy.app.timers callback reschedules it after
+    that many seconds; returning None stops it. `remaining` is a one-item
+    list so the same registered function can update it across reschedules.
+    """
+    remaining = [max_attempts]
+
+    def tick():
+        from . import ui
+
+        path = cache_path(url)
+        if not path.exists():
+            return None
+        if ui._load_preview(url, path):
+            return None
+        remaining[0] -= 1
+        if remaining[0] <= 0:
+            return None
+        return 0.5
+
+    bpy.app.timers.register(tick, first_interval=0.0)
 
 
 def prewarm_cached():
@@ -125,7 +141,7 @@ def prewarm_cached():
     of a session does not race Blender's own thumbnail generation."""
     for url in all_media_urls():
         if is_cached(url):
-            bpy.app.timers.register(lambda url=url: _prewarm_preview(url), first_interval=0.0)
+            _schedule_prewarm(url)
 
 
 def request_download(url):
@@ -154,7 +170,7 @@ def request_download(url):
             # bpy.app.timers.register() is documented as safe to call from a
             # background thread specifically to hand work back to the main
             # thread, which is what previews.load() needs to run on.
-            bpy.app.timers.register(lambda: _prewarm_preview(url), first_interval=0.0)
+            _schedule_prewarm(url)
         except Exception as error:
             print(f"[Blender Search] Could not download {url}: {error}")
             with _lock:
@@ -250,7 +266,7 @@ def start_pack_download():
         for url in urls:
             try:
                 _download_one(url)
-                bpy.app.timers.register(lambda url=url: _prewarm_preview(url), first_interval=0.0)
+                _schedule_prewarm(url)
             except Exception as error:
                 print(f"[Blender Search] Could not download {url}: {error}")
             pack_state["done_count"] += 1

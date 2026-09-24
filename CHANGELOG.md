@@ -6,6 +6,23 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-09-24
+
+### Fixed
+- The GIF example still did not show after the 0.6.1 file-size fix.
+  Found the real cause: Blender hands back a usable-looking, non-zero
+  icon id from `previews.load()` immediately, before it has actually
+  generated any thumbnail pixels. Code that only checked "is the icon
+  id non-zero" could treat a picture as ready when it was still blank.
+  Now checks the preview's actual `image_size`, which stays `(0, 0)`
+  until real pixel data exists, for every picture, GIF, and bundled
+  local file. A newly downloaded picture is also retried for a few
+  seconds after downloading, since generating a thumbnail is not
+  always instant.
+- Added a distinct "Generating thumbnail..." message for this in-between
+  state, instead of grouping it with "Loading picture..." or "Could not
+  load this picture.", since neither was accurate.
+
 ## [0.6.1] - 2026-09-24
 
 ### Fixed
