@@ -10,8 +10,8 @@ parts of Blender's user interface.
 - It highlights the item you find. The addon uses a yellow color by
   default. You can change this color.
 - It gives you an eyedropper tool. Point at a part of Blender. The addon
-  shows you information about it. Press Tab to see other matches in the
-  same area.
+  shows you information about it. Shift+Tab cycles other items in that
+  same area. Tab cycles other places that item's category shows up.
 - It lets you mark any item as a favorite with a star, and it remembers
   items you searched for recently.
 - It shows a link to the official Blender manual for many items.
@@ -95,15 +95,18 @@ how many recent searches to remember, up to 50.
 3. Move your mouse over any part of Blender's interface.
 4. Wait for a moment. A popup appears.
 5. The popup names the closest item the addon knows about in that area.
-6. If more than one item matches that area, press Tab to see the next
-   one. The popup tells you how many matches there are.
-7. Click the eyedropper button again to turn it off. You can also press
+6. Press Shift+Tab to see the other items documented in this same area,
+   if there is more than one. The popup tells you how many there are.
+7. Press Tab to see other places in Blender where this item's category
+   also shows up, even if that other place is not where your mouse is.
+   If that other place happens to already be open, the addon highlights
+   it there too.
+8. Click the eyedropper button again to turn it off. You can also press
    Escape or right-click.
 
 The eyedropper cannot always name the exact button under your mouse.
 Blender does not give addons that information for every button. When the
-addon is not sure, it tells you the closest known item in that area. Use
-Tab to check the other items it found in that same area.
+addon is not sure, it tells you the closest known item in that area.
 
 ## How to Add Your Own Links
 

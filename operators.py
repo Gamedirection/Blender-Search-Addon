@@ -166,7 +166,11 @@ def _area_region_at(context, mouse_x, mouse_y):
 class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
     bl_idname = "searchaddon.eyedropper"
     bl_label = "Eyedropper"
-    bl_description = "Hover over Blender's interface to learn about the nearest documented item. Press Tab to see other matches in the same area"
+    bl_description = (
+        "Hover over Blender's interface to learn about the nearest documented item. "
+        "Shift+Tab cycles other items in this same area. Tab cycles other places "
+        "this item's category shows up"
+    )
 
     def invoke(self, context, event):
         wm = context.window_manager
@@ -182,7 +186,8 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         self._hover_region = None
         self._hover_start = 0.0
         self._shown_for = None
-        self._match_index = 0
+        self._item_index = 0
+        self._active_entry_id = None
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -203,16 +208,16 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
                 self._hover_region = region
                 self._hover_start = time.monotonic()
                 self._shown_for = None
-                self._match_index = 0
+                self._item_index = 0
+                self._active_entry_id = None
 
         if event.type == 'TAB' and event.value == 'PRESS':
-            if self._hover_region is not None:
-                matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
-                if matches:
-                    self._match_index = (self._match_index + 1) % len(matches)
-                    self._shown_for = None
-                    self._show_popup(context)
-            # Consume Tab so Blender does not also toggle Edit Mode underneath.
+            if event.shift:
+                self._cycle_item(context)
+            else:
+                self._cycle_place(context)
+            # Consume Tab (and Shift+Tab) so Blender does not also toggle Edit
+            # Mode or switch workspace tabs underneath.
             return {'RUNNING_MODAL'}
 
         if (
@@ -225,6 +230,49 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
 
         return {'PASS_THROUGH'}
 
+    def _current_reference_entry(self):
+        """The entry Tab and Shift+Tab both treat as "the one you are looking at"."""
+        if self._active_entry_id is not None:
+            entry = registry.get(self._active_entry_id)
+            if entry is not None:
+                return entry
+
+        if self._hover_area is None or self._hover_region is None:
+            return None
+        matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
+        if not matches:
+            return None
+        return matches[self._item_index % len(matches)]
+
+    def _cycle_item(self, context):
+        """Shift+Tab: the other items documented in the area under the cursor."""
+        if self._hover_area is None or self._hover_region is None:
+            return
+        matches = registry.entries_for_space(self._hover_area.type, self._hover_region.type)
+        if not matches:
+            return
+        self._item_index = (self._item_index + 1) % len(matches)
+        self._shown_for = None
+        self._show_popup(context)
+
+    def _cycle_place(self, context):
+        """Tab: the other editors where this item's category also shows up."""
+        entry = self._current_reference_entry()
+        if entry is None:
+            return
+        places = registry.places_for_category(entry["category"], region_type_hint=entry.get("region_type"))
+        if not places:
+            return
+
+        start_index = 0
+        for index, place_entry in enumerate(places):
+            if place_entry["id"] == entry["id"]:
+                start_index = index
+                break
+        next_index = (start_index + 1) % len(places)
+        self._shown_for = None
+        self._show_place(context, places[next_index], next_index, len(places))
+
     def _show_popup(self, context):
         area = self._hover_area
         region = self._hover_region
@@ -236,21 +284,52 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         if not matches:
             return
 
-        index = self._match_index % len(matches)
+        index = self._item_index % len(matches)
         entry = matches[index]
         exact = region.type == entry.get("region_type")
-        more_available = len(matches) > 1
+        footer = None
+        if len(matches) > 1:
+            footer = f"Shift+Tab for more items here ({index + 1} of {len(matches)})"
 
-        def draw(popup_self, popup_context, entry=entry, exact=exact,
-                 more=more_available, shown_index=index, total=len(matches)):
+        self._display_entry(context, entry, exact, footer)
+
+    def _show_place(self, context, entry, index, total):
+        footer = None
+        if total > 1:
+            editor_name = entry["space_type"].replace("_", " ").title()
+            footer = f"Tab for other places ({index + 1} of {total}): {editor_name}"
+
+        self._display_entry(context, entry, True, footer)
+        self._highlight_if_open(context, entry)
+
+    def _display_entry(self, context, entry, exact, footer_text):
+        self._active_entry_id = entry["id"]
+
+        def draw(popup_self, popup_context, entry=entry, exact=exact, footer_text=footer_text):
             ui.draw_entry_info(popup_self.layout, entry, exact=exact)
-            if more:
-                popup_self.layout.label(
-                    text=f"Press Tab for more matches here ({shown_index + 1} of {total})",
-                    icon='TRIA_RIGHT',
-                )
+            if footer_text:
+                popup_self.layout.label(text=footer_text, icon='TRIA_RIGHT')
 
         context.window_manager.popover(draw, ui_units_x=16)
+
+    @staticmethod
+    def _highlight_if_open(context, entry):
+        """If Tab lands on an editor that happens to already be open, highlight
+        it there too, even though the cursor never physically moved to it."""
+        for window in context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type != entry["space_type"]:
+                    continue
+                region = (
+                    next((r for r in area.regions if r.type == entry["region_type"]), None)
+                    or next((r for r in area.regions if r.type == 'WINDOW'), None)
+                )
+                if region is None:
+                    continue
+                overlay.set_target(region, (0, 0, region.width, region.height))
+                area.tag_redraw()
+                bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
+                return
 
     def _finish(self, context):
         context.window_manager.search_addon_eyedropper_active = False

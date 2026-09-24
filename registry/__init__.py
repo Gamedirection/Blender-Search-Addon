@@ -84,6 +84,37 @@ def entries_for_space(space_type, region_type=None):
     return results
 
 
+def places_for_category(category, region_type_hint=None):
+    """One representative entry per distinct editor sharing this category.
+
+    Editors are ordered by when they were first seen while loading the
+    registry, which is stable across calls. When an editor has more than
+    one entry in this category, prefer one matching region_type_hint.
+    """
+    load_all()
+    by_space = {}
+    order = []
+    for entry in _ENTRIES.values():
+        if entry["category"] != category:
+            continue
+        space_type = entry["space_type"]
+        if space_type not in by_space:
+            by_space[space_type] = []
+            order.append(space_type)
+        by_space[space_type].append(entry)
+
+    places = []
+    for space_type in order:
+        candidates = by_space[space_type]
+        if region_type_hint:
+            exact = [entry for entry in candidates if entry["region_type"] == region_type_hint]
+            if exact:
+                places.append(exact[0])
+                continue
+        places.append(candidates[0])
+    return places
+
+
 def _tokens(text):
     return set(_WORD_RE.findall(text.lower()))
 

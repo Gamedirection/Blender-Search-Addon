@@ -6,6 +6,24 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-24
+
+### Added
+- The eyedropper now has two separate cycling keys. Shift+Tab cycles
+  through the other items documented in the same area under the cursor
+  (what Tab used to do). Tab now cycles through other places in
+  Blender where that item's category also shows up, even parts of the
+  screen the cursor is not on, and highlights that place too if it is
+  already open.
+
+### Investigating
+- Pictures and GIFs were reported as still not showing after 0.5.1.
+  Added much more detailed logging (prefixed "[Blender Search]") to
+  every step of downloading and caching a picture, so the exact
+  failure point shows up in the System Console on the next test.
+  Please reinstall the updated zip before retesting: Blender does not
+  auto-update an installed extension from a locally rebuilt file.
+
 ## [0.5.1] - 2026-09-24
 
 ### Fixed

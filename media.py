@@ -38,7 +38,10 @@ def online_access_allowed():
     """Blender's own "Allow Online Access" preference (added in 4.2). Older
     Blender versions do not have this attribute at all, so default to True
     there rather than assuming the newer, more restrictive behavior."""
-    return getattr(bpy.app, "online_access", True)
+    if not hasattr(bpy.app, "online_access"):
+        print("[Blender Search] bpy.app.online_access does not exist on this Blender build, assuming True")
+        return True
+    return bpy.app.online_access
 
 
 def _cache_dir():
@@ -75,9 +78,11 @@ def _download_one(url):
     path = cache_path(url)
     if path.exists():
         return True
+    print(f"[Blender Search] Downloading {url} -> {path}")
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
     with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
         data = response.read()
+    print(f"[Blender Search] Got {len(data)} bytes for {url}")
 
     # Note: if a single-item fetch and a pack download race on the exact
     # same URL, both threads write the same temp path. Worst case is a
@@ -85,6 +90,7 @@ def _download_one(url):
     temp_path = Path(str(path) + ".part")
     temp_path.write_bytes(data)
     os.replace(temp_path, path)
+    print(f"[Blender Search] Cached {url} at {path}, exists: {path.exists()}")
     return True
 
 
@@ -94,12 +100,14 @@ def request_download(url):
         return
 
     if not online_access_allowed():
+        print(f"[Blender Search] Not fetching {url}, online access is off (Preferences > System)")
         with _lock:
             _status[url] = "blocked"
         return
 
     with _lock:
         if url in _pending:
+            print(f"[Blender Search] {url} is already downloading")
             return
         _pending.add(url)
         _status.pop(url, None)

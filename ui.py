@@ -42,6 +42,9 @@ def _icon_id_from_bundled(relative_path):
     return _load_preview(relative_path, path)
 
 
+_last_logged_state = {}
+
+
 def _icon_id_for_url(url):
     """Load a cached picture for this URL. Only shows the first frame of a GIF.
 
@@ -53,19 +56,28 @@ def _icon_id_for_url(url):
     path = media.cache_path(url)
     if path.exists():
         icon_id = _load_preview(url, path)
-        return icon_id, ("ready" if icon_id else "failed")
+        state = "ready" if icon_id else "failed"
+    else:
+        icon_id = 0
+        prefs = preferences.get_prefs()
+        if prefs is not None and not prefs.allow_internet_media:
+            state = "blocked"
+        else:
+            media.request_download(url)
+            status = media.status_for(url)
+            if status == "blocked":
+                state = "blocked"
+            elif status == "error":
+                state = "failed"
+            else:
+                state = "loading"
 
-    prefs = preferences.get_prefs()
-    if prefs is not None and not prefs.allow_internet_media:
-        return 0, "blocked"
+    # Log once per state change, not on every redraw, so this stays readable.
+    if _last_logged_state.get(url) != state:
+        _last_logged_state[url] = state
+        print(f"[Blender Search] {url}: state={state}, cache_path={path}, exists={path.exists()}")
 
-    media.request_download(url)
-    status = media.status_for(url)
-    if status == "blocked":
-        return 0, "blocked"
-    if status == "error":
-        return 0, "failed"
-    return 0, "loading"
+    return icon_id, state
 
 
 def _draw_media_thumbnail(layout, source, note=None):
