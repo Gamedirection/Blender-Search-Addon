@@ -7,23 +7,24 @@ side as the search text. Typing "category|" with nothing after the pipe
 lists every entry in that category. A plain search with no pipe still
 finds items across every category, including ones that also belong to a
 category someone could have searched for directly.
+
+Every entry has a "locations" list, since one item can show up in more
+than one editor (the eyedropper's Tab key, and the search results, both
+rely on being able to check all of them). Older, single-location entries
+(a single space_type/region_type/ui_path instead of a locations list) are
+still accepted and are wrapped into a one-item list automatically.
 """
 
 import json
 import re
 from pathlib import Path
 
+from .. import storage
+
 _ENTRIES = {}
 _LOADED = False
 
-_REQUIRED_FIELDS = (
-    "id",
-    "title",
-    "category",
-    "space_type",
-    "region_type",
-    "description",
-)
+_REQUIRED_FIELDS = ("id", "title", "category", "description")
 
 _WORD_RE = re.compile(r"[a-z0-9]+")
 
@@ -32,8 +33,31 @@ def _registry_dir():
     return Path(__file__).parent
 
 
+def _normalize_entry(entry):
+    entry = dict(entry)
+    if not entry.get("locations"):
+        entry["locations"] = [{
+            "space_type": entry.get("space_type"),
+            "region_type": entry.get("region_type") or "WINDOW",
+            "ui_path": entry.get("ui_path", ""),
+        }]
+    entry.setdefault("tags", [])
+    entry.setdefault("images", [])
+    entry.setdefault("gifs", [])
+    entry.setdefault("videos", [])
+    entry.setdefault("manual_url", "")
+    return entry
+
+
+def _has_valid_locations(entry):
+    locations = entry.get("locations")
+    if locations:
+        return all(location.get("space_type") for location in locations)
+    return bool(entry.get("space_type"))
+
+
 def load_all(force=False):
-    """Read every registry/*.json file into memory. Safe to call more than once."""
+    """Read every registry/*.json file, plus the user's own entries. Safe to call more than once."""
     global _ENTRIES, _LOADED
     if _LOADED and not force:
         return
@@ -52,7 +76,24 @@ def load_all(force=False):
                 entry_id = entry.get("id", "?")
                 print(f"[Blender Search] {path.name}: entry '{entry_id}' is missing {missing}")
                 continue
+            if not _has_valid_locations(entry):
+                print(f"[Blender Search] {path.name}: entry '{entry['id']}' has no valid location")
+                continue
+            entry = _normalize_entry(entry)
+            entry["_source"] = "bundled"
             entries[entry["id"]] = entry
+
+    for entry in storage.load_user_entries().get("entries", []):
+        missing = [field for field in _REQUIRED_FIELDS if field not in entry]
+        if missing:
+            print(f"[Blender Search] your entry '{entry.get('id', '?')}' is missing {missing}")
+            continue
+        if not _has_valid_locations(entry):
+            print(f"[Blender Search] your entry '{entry['id']}' has no valid location")
+            continue
+        entry = _normalize_entry(entry)
+        entry["_source"] = "user"
+        entries[entry["id"]] = entry
 
     _ENTRIES = entries
     _LOADED = True
@@ -74,11 +115,20 @@ def categories():
 
 
 def entries_for_space(space_type, region_type=None):
-    """Return registry entries for an editor, preferring an exact region match."""
+    """Return registry entries with a location in this editor, preferring an exact region match."""
     load_all()
-    results = [entry for entry in _ENTRIES.values() if entry["space_type"] == space_type]
+    results = [
+        entry for entry in _ENTRIES.values()
+        if any(location["space_type"] == space_type for location in entry["locations"])
+    ]
     if region_type:
-        exact = [entry for entry in results if entry["region_type"] == region_type]
+        exact = [
+            entry for entry in results
+            if any(
+                location["space_type"] == space_type and location["region_type"] == region_type
+                for location in entry["locations"]
+            )
+        ]
         if exact:
             return exact
     return results
@@ -89,7 +139,8 @@ def places_for_category(category, region_type_hint=None):
 
     Editors are ordered by when they were first seen while loading the
     registry, which is stable across calls. When an editor has more than
-    one entry in this category, prefer one matching region_type_hint.
+    one candidate entry/location in this category, prefer one matching
+    region_type_hint.
     """
     load_all()
     by_space = {}
@@ -97,21 +148,22 @@ def places_for_category(category, region_type_hint=None):
     for entry in _ENTRIES.values():
         if entry["category"] != category:
             continue
-        space_type = entry["space_type"]
-        if space_type not in by_space:
-            by_space[space_type] = []
-            order.append(space_type)
-        by_space[space_type].append(entry)
+        for location in entry["locations"]:
+            space_type = location["space_type"]
+            if space_type not in by_space:
+                by_space[space_type] = []
+                order.append(space_type)
+            by_space[space_type].append((entry, location))
 
     places = []
     for space_type in order:
         candidates = by_space[space_type]
         if region_type_hint:
-            exact = [entry for entry in candidates if entry["region_type"] == region_type_hint]
+            exact = [pair for pair in candidates if pair[1]["region_type"] == region_type_hint]
             if exact:
-                places.append(exact[0])
+                places.append(exact[0][0])
                 continue
-        places.append(candidates[0])
+        places.append(candidates[0][0])
     return places
 
 

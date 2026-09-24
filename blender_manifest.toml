@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "blender_search_addon"
-version = "0.6.2"
+version = "0.7.0"
 name = "Blender Search"
 tagline = "Search Blender's interface, inspect elements, and save your own links"
 maintainer = "GameDirection <alex@gamedirection.net>"
@@ -19,4 +19,4 @@ license = [
 
 [permissions]
 network = "Opens your browser to the Blender manual and this addon's issue page, and downloads pictures, GIFs, and video thumbnails for registry items (can be turned off in preferences)"
-files = "Saves your personal links, favorites, and downloaded media in Blender's user configuration and cache folders"
+files = "Saves your personal links, favorites, your own entries, and downloaded media in Blender's user configuration and cache folders, and reads/writes files you choose when exporting or importing your contributions"

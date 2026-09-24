@@ -26,6 +26,11 @@ parts of Blender's user interface.
 - You can change its hotkeys from its own preferences panel.
 - It lets you save your own links for any item. You can save as many links
   as you want.
+- It lets you create your own entries from inside Blender, without
+  editing any files, and Shift+Click with the eyedropper to start one
+  already pointed at what you were looking at.
+- It lets you export your own entries and links to a file, so you can
+  share them, and import a file someone else shared with you.
 - It gives you a button to report a problem or a missing item.
 
 ## Supported Systems
@@ -101,7 +106,9 @@ how many recent searches to remember, up to 50.
    also shows up, even if that other place is not where your mouse is.
    If that other place happens to already be open, the addon highlights
    it there too.
-8. Click the eyedropper button again to turn it off. You can also press
+8. Shift+Click anywhere to start a new entry for that spot instead. See
+   "How to Create a New Entry Inside Blender" below.
+9. Click the eyedropper button again to turn it off. You can also press
    Escape or right-click.
 
 The eyedropper cannot always name the exact button under your mouse.
@@ -145,10 +152,44 @@ never want this addon to access the internet on its own.
 3. Find "Hotkeys" near the bottom.
 4. Click the key shown, then press the new key you want to use.
 
-## How to Add a New Registry Item
+## How to Create a New Entry Inside Blender
 
-The addon uses a set of JSON files to describe Blender's interface. Anyone
-can add a new item or fix an old one.
+You do not need to edit any files to add a new item. The addon can build
+one for you.
+
+1. Open the side panel, click the "Search" tab, then click "New Entry".
+   You can also turn on the eyedropper and Shift+Click the thing you
+   want to document, which starts a new entry already pointed at that
+   spot.
+2. Fill in a title, category, tags, a description, and a manual or
+   source link if you have one.
+3. Add every place this shows up. Click "Add by Clicking", then click
+   the real spot in Blender, and repeat for any other place it shows
+   up. You can also type the editor and region names in yourself.
+4. Add any pictures, GIFs, or videos as web links. See "How to Use
+   Pictures Without the Internet" above for how these work.
+5. Click "Save Entry". It is saved on your computer, and you can search
+   for it right away.
+
+## How to Share What You Have Added
+
+Your own entries, and any personal links you have added to existing
+items, are saved separately from the items that come with the addon, so
+an addon update never overwrites them.
+
+1. Open Edit, then Preferences, then Add-ons, and open this addon's
+   preferences.
+2. Click "Export Your Contributions" and choose where to save the file.
+3. Send that file to someone else, or open a pull request with it so it
+   can be added for everyone.
+4. The other person clicks "Import Contributions" in their own
+   preferences and picks your file. Their existing entries and links
+   are kept; your file only adds to them.
+
+## How to Add an Entry by Editing a File
+
+If you would rather edit the registry files directly, or want to write
+several entries at once:
 
 1. Read `docs/registry_schema.md`. It explains every field.
 2. Open a JSON file inside the `registry` folder, or create a new one.
@@ -158,7 +199,7 @@ can add a new item or fix an old one.
 
 Most of our work on this addon is adding items people find missing. Please
 use the "Missed Item" report if you are not sure how to edit the file
-yourself.
+yourself, or use "New Entry" inside Blender instead.
 
 ## If a Picture Does Not Show
 

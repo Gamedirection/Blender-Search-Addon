@@ -25,19 +25,37 @@ Each file holds one JSON object with two fields.
 | `id` | Yes | text | A short, unique name for this entry. Use lowercase letters, numbers, dots, and underscores. Example: `view3d.proportional_edit_falloff`. |
 | `title` | Yes | text | The name shown to the user. |
 | `category` | Yes | text | A short group name, such as `modeling` or `shading`. |
-| `space_type` | Yes | text | The Blender editor this item lives in, such as `VIEW_3D`, `PROPERTIES`, `NODE_EDITOR`, or `OUTLINER`. |
-| `region_type` | Yes | text | The part of the editor, such as `WINDOW`, `HEADER`, `TOOL_HEADER`, or `UI`. See the note below. |
-| `ui_path` | Yes | text | A short, human path to the item, such as `3D Viewport > Header > Proportional Editing dropdown`. |
 | `description` | Yes | text | A short, clear explanation of what the item does. |
-| `manual_url` | Yes | text | A link to the matching page on `docs.blender.org`. |
+| `locations` | Yes | list of objects | Every place this item shows up. See "Locations" below. |
+| `manual_url` | No | text | A link to the matching page on `docs.blender.org`, or any other page about this. |
 | `images` | No | list of text | Pictures to show in the popup. See "Pictures, GIFs, and Video" below. |
 | `gifs` | No | list of text | GIF files to show in the popup. Only the first frame shows. See below. |
 | `videos` | No | list | Either a path to a local video file, or an object with `url`, `label`, and `thumbnail` (see below). |
 | `tags` | No | list of text | Extra words people might search for. Also used by category search, see below. |
 | `rna_hint` | No | object | Optional. Holds `operator` and `property` values, kept for future use by more precise matching. |
 
-`manual_url` is optional. Most entries link to a page on `docs.blender.org`, but a
-community tool or technique can link anywhere useful instead, or leave the field out.
+## Locations
+
+An entry's `locations` field is a list, since the same item can show up in
+more than one place (the eyedropper's Tab key cycles through them, see
+"A Note on the Eyedropper Tool" below). Each location is an object:
+
+```json
+{
+  "space_type": "VIEW_3D",
+  "region_type": "HEADER",
+  "ui_path": "3D Viewport > Header > Mesh menu > Extrude"
+}
+```
+
+- `space_type`: the Blender editor, such as `VIEW_3D`, `PROPERTIES`, `NODE_EDITOR`, or `OUTLINER`.
+- `region_type`: the part of the editor, such as `WINDOW`, `HEADER`, `TOOL_HEADER`, or `UI`. See "Choosing region_type" below.
+- `ui_path`: a short, human path to the item, such as `3D Viewport > Header > Proportional Editing dropdown`.
+
+Older entries written before this addon supported more than one location
+still work: a single `space_type`, `region_type`, and `ui_path` directly on
+the entry (instead of inside a `locations` list) is read the same as a
+`locations` list with one item in it. New entries should use `locations`.
 
 ## Pictures, GIFs, and Video
 
@@ -122,9 +140,13 @@ one button's exact position. Pick the smallest region that is actually true:
       "id": "view3d.proportional_edit_falloff",
       "title": "Proportional Editing Falloff",
       "category": "modeling",
-      "space_type": "VIEW_3D",
-      "region_type": "TOOL_HEADER",
-      "ui_path": "3D Viewport > Header > Proportional Editing dropdown",
+      "locations": [
+        {
+          "space_type": "VIEW_3D",
+          "region_type": "TOOL_HEADER",
+          "ui_path": "3D Viewport > Header > Proportional Editing dropdown"
+        }
+      ],
       "description": "Controls the falloff curve used by proportional editing, so nearby geometry moves more than distant geometry.",
       "manual_url": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/proportional_editing.html",
       "images": [],
@@ -148,3 +170,30 @@ the mouse right now". The eyedropper tool matches the current editor and
 region against the closest entry it can find. Precise fields, such as
 `ui_path` and `region_type`, make this match better. Adding entries with
 accurate fields helps the eyedropper give a closer answer to everyone.
+
+Shift+Tab cycles through the other entries documented in the same area.
+Tab cycles through an entry's own other `locations`, and through other
+entries sharing its `category` in a different editor.
+
+## Contributing From Inside Blender
+
+Most contributions do not need this file at all. The addon itself can
+create one for you:
+
+1. Click "New Entry" in the Search sidebar panel, or turn on the
+   eyedropper and Shift+Click the thing you want to document.
+2. Fill in the title, category, tags, a plain text description, and a
+   manual or source link.
+3. Add every place this shows up, either by clicking "Add by Clicking"
+   and then clicking the real spot in Blender, or by typing the editor
+   and region names in yourself.
+4. Add any pictures, GIFs, or videos as web links. See "Pictures, GIFs,
+   and Video" above.
+5. Click "Save Entry". It is saved on your computer, and searchable
+   right away.
+
+Your own entries are stored separately from the ones bundled with the
+addon, so an addon update never overwrites them. Use "Export Your
+Contributions" in the addon's preferences to save your new entries and
+personal links to a file, and send that file to someone else, or open a
+pull request with it. They use "Import Contributions" to add them.

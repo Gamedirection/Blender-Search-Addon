@@ -107,6 +107,13 @@ class SearchAddonPreferences(AddonPreferences):
         layout.separator()
         keymap.draw_settings(layout, context)
 
+        box = layout.box()
+        box.label(text="Your Contributions")
+        box.label(text="Share the entries and links you have added with other people.")
+        row = box.row(align=True)
+        row.operator("searchaddon.export_contributions", icon='EXPORT')
+        row.operator("searchaddon.import_contributions", icon='IMPORT')
+
         layout.separator()
         layout.operator("searchaddon.report_issue", icon='URL')
 

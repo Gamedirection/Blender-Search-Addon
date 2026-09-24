@@ -172,7 +172,14 @@ def draw_entry_info(layout, entry, exact=True):
     box = layout.box()
     header = box.row(align=True)
     _draw_favorite_button(header, entry["id"])
-    header.label(text=entry["title"], icon='VIEWZOOM')
+    title_text = entry["title"] + (" (yours)" if entry.get("_source") == "user" else "")
+    header.label(text=title_text, icon='VIEWZOOM')
+
+    editor_names = sorted({
+        location["space_type"].replace("_", " ").title() for location in entry.get("locations", [])
+    })
+    if editor_names:
+        box.label(text="Found in: " + ", ".join(editor_names))
 
     for line in textwrap.wrap(entry.get("description", ""), width=42) or [""]:
         box.label(text=line)
@@ -271,7 +278,8 @@ def _draw_grouped_results(layout, context):
     on_screen_types = _open_space_types(context)
     on_screen_entries = [
         entry for entry in registry.all_entries().values()
-        if entry["id"] not in shown_ids and entry["space_type"] in on_screen_types
+        if entry["id"] not in shown_ids
+        and any(location["space_type"] in on_screen_types for location in entry["locations"])
     ]
     on_screen_entries.sort(key=lambda entry: entry["title"])
     if on_screen_entries:
@@ -323,6 +331,10 @@ class SEARCHADDON_PT_sidebar(bpy.types.Panel):
             depress=wm.search_addon_eyedropper_active,
         )
         layout.operator("searchaddon.report_issue", icon='URL')
+        layout.operator("searchaddon.new_entry", icon='ADD')
+
+        if wm.search_addon_compose_active:
+            _draw_compose_panel(layout, context)
 
         layout.separator()
 
@@ -356,6 +368,56 @@ class SEARCHADDON_PT_sidebar(bpy.types.Panel):
                     _draw_result_row(layout, entry)
             else:
                 layout.label(text="No recent searches yet", icon='INFO')
+
+
+def _draw_compose_panel(layout, context):
+    wm = context.window_manager
+    box = layout.box()
+    box.label(text="New Entry", icon='ADD')
+
+    box.prop(wm, "search_addon_draft_title")
+    box.prop(wm, "search_addon_draft_category")
+    existing = registry.categories()
+    if existing:
+        box.label(text="Existing categories: " + ", ".join(existing))
+    box.prop(wm, "search_addon_draft_tags")
+    box.prop(wm, "search_addon_draft_description")
+    box.prop(wm, "search_addon_draft_manual_url")
+
+    box.separator()
+    box.label(text="Locations (Tab through these in the eyedropper)")
+    for index, location in enumerate(wm.search_addon_draft_locations):
+        row = box.row(align=True)
+        row.prop(location, "space_type", text="")
+        row.prop(location, "region_type", text="")
+        remove_props = row.operator("searchaddon.remove_draft_location", text="", icon='X')
+        remove_props.index = index
+        box.prop(location, "ui_path", text="Path")
+    row = box.row(align=True)
+    row.operator("searchaddon.pick_location", text="Add by Clicking", icon='EYEDROPPER')
+    row.operator("searchaddon.add_draft_location", text="Add Manually", icon='ADD')
+
+    box.separator()
+    box.label(text="Pictures, GIFs, and Videos (hosted links only)")
+    for index, link in enumerate(wm.search_addon_draft_links):
+        row = box.row(align=True)
+        row.label(text=link.kind.title())
+        row.prop(link, "url", text="")
+        remove_props = row.operator("searchaddon.remove_draft_link", text="", icon='X')
+        remove_props.index = index
+        if link.kind == "video":
+            sub = box.row(align=True)
+            sub.prop(link, "label", text="Label")
+            sub.prop(link, "thumbnail_url", text="Thumbnail URL")
+    row = box.row(align=True)
+    row.operator("searchaddon.add_draft_link", text="Image", icon='IMAGE_DATA').kind = "image"
+    row.operator("searchaddon.add_draft_link", text="GIF", icon='IMAGE_DATA').kind = "gif"
+    row.operator("searchaddon.add_draft_link", text="Video", icon='PLAY').kind = "video"
+
+    box.separator()
+    row = box.row(align=True)
+    row.operator("searchaddon.save_draft_entry", icon='CHECKMARK')
+    row.operator("searchaddon.cancel_new_entry", icon='X')
 
 
 def _draw_help_menu(self, context):

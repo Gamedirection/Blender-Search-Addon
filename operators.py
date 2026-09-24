@@ -1,11 +1,15 @@
 # SPDX-License-Identifier: MIT
-"""Operators: search popup, jump to result, eyedropper, favorites, and personal links."""
+"""Operators: search popup, jump to result, eyedropper, favorites, personal
+links, and the New Entry contribution workflow (create, export, import)."""
 
+import json
+import re
 import time
 from pathlib import Path
 
 import bpy
 from bpy.props import StringProperty, IntProperty, FloatProperty
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 from . import registry
 from . import storage
@@ -67,32 +71,36 @@ class SEARCHADDON_OT_jump_to_entry(bpy.types.Operator):
 
         for window in context.window_manager.windows:
             for area in window.screen.areas:
-                if area.type != entry["space_type"]:
-                    continue
-                region = self._find_region(area, entry["region_type"])
-                if region is None:
-                    continue
-                self._highlight(area, region)
-                self.report({'INFO'}, "Highlighted: " + entry["title"])
-                return {'FINISHED'}
+                for location in entry["locations"]:
+                    if area.type != location["space_type"]:
+                        continue
+                    region = self._find_region(area, location["region_type"])
+                    if region is None:
+                        continue
+                    self._highlight(area, region)
+                    self.report({'INFO'}, "Highlighted: " + entry["title"])
+                    return {'FINISHED'}
 
         prefs = preferences.get_prefs(context)
-        if prefs is not None and prefs.auto_reveal_offscreen:
+        if prefs is not None and prefs.auto_reveal_offscreen and entry["locations"]:
             window = context.window
             areas = list(window.screen.areas) if window else []
             if areas:
                 target_area = max(areas, key=lambda a: a.width * a.height)
                 previous_type = target_area.type
-                target_area.type = entry["space_type"]
-                region = self._find_region(target_area, entry["region_type"])
+                location = entry["locations"][0]
+                target_area.type = location["space_type"]
+                region = self._find_region(target_area, location["region_type"])
                 if region is not None:
                     self._highlight(target_area, region, revert=(target_area, previous_type))
                     self.report({'INFO'}, "Revealed: " + entry["title"])
                     return {'FINISHED'}
                 target_area.type = previous_type
 
-        editor_name = entry["space_type"].replace("_", " ").title()
-        self.report({'WARNING'}, "Open the " + editor_name + " editor to see this")
+        editor_names = sorted({
+            location["space_type"].replace("_", " ").title() for location in entry["locations"]
+        })
+        self.report({'WARNING'}, "Open one of these to see this: " + ", ".join(editor_names))
         return {'CANCELLED'}
 
 
@@ -169,7 +177,8 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
     bl_description = (
         "Hover over Blender's interface to learn about the nearest documented item. "
         "Shift+Tab cycles other items in this same area. Tab cycles other places "
-        "this item's category shows up"
+        "this item's category shows up. Shift+Click starts a new entry for what "
+        "you are hovering"
     )
 
     def invoke(self, context, event):
@@ -220,6 +229,16 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
             # Mode or switch workspace tabs underneath.
             return {'RUNNING_MODAL'}
 
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and event.shift:
+            if self._hover_area is not None and self._hover_region is not None:
+                _start_new_entry(
+                    context,
+                    initial_location=(self._hover_area.type, self._hover_region.type),
+                )
+                wm.search_addon_eyedropper_active = False
+                return self._finish(context)
+            return {'RUNNING_MODAL'}
+
         if (
             event.type == 'TIMER'
             and self._hover_region is not None
@@ -260,7 +279,8 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         entry = self._current_reference_entry()
         if entry is None:
             return
-        places = registry.places_for_category(entry["category"], region_type_hint=entry.get("region_type"))
+        region_type_hint = self._hover_region.type if self._hover_region is not None else None
+        places = registry.places_for_category(entry["category"], region_type_hint=region_type_hint)
         if not places:
             return
 
@@ -286,7 +306,10 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
 
         index = self._item_index % len(matches)
         entry = matches[index]
-        exact = region.type == entry.get("region_type")
+        exact = any(
+            location["space_type"] == area.type and location["region_type"] == region.type
+            for location in entry["locations"]
+        )
         footer = None
         if len(matches) > 1:
             footer = f"Shift+Tab for more items here ({index + 1} of {len(matches)})"
@@ -296,8 +319,10 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
     def _show_place(self, context, entry, index, total):
         footer = None
         if total > 1:
-            editor_name = entry["space_type"].replace("_", " ").title()
-            footer = f"Tab for other places ({index + 1} of {total}): {editor_name}"
+            editor_names = sorted({
+                location["space_type"].replace("_", " ").title() for location in entry["locations"]
+            })
+            footer = f"Tab for other places ({index + 1} of {total}): {', '.join(editor_names)}"
 
         self._display_entry(context, entry, True, footer)
         self._highlight_if_open(context, entry)
@@ -318,18 +343,19 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
         it there too, even though the cursor never physically moved to it."""
         for window in context.window_manager.windows:
             for area in window.screen.areas:
-                if area.type != entry["space_type"]:
-                    continue
-                region = (
-                    next((r for r in area.regions if r.type == entry["region_type"]), None)
-                    or next((r for r in area.regions if r.type == 'WINDOW'), None)
-                )
-                if region is None:
-                    continue
-                overlay.set_target(region, (0, 0, region.width, region.height))
-                area.tag_redraw()
-                bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
-                return
+                for location in entry["locations"]:
+                    if area.type != location["space_type"]:
+                        continue
+                    region = (
+                        next((r for r in area.regions if r.type == location["region_type"]), None)
+                        or next((r for r in area.regions if r.type == 'WINDOW'), None)
+                    )
+                    if region is None:
+                        continue
+                    overlay.set_target(region, (0, 0, region.width, region.height))
+                    area.tag_redraw()
+                    bpy.app.timers.register(overlay.clear_target, first_interval=4.0)
+                    return
 
     def _finish(self, context):
         context.window_manager.search_addon_eyedropper_active = False
@@ -471,6 +497,281 @@ class SEARCHADDON_OT_clear_media_cache(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def _slugify(text):
+    text = text.strip().lower()
+    text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+    return text or "entry"
+
+
+def _reset_draft(wm):
+    wm.search_addon_draft_title = ""
+    wm.search_addon_draft_category = ""
+    wm.search_addon_draft_tags = ""
+    wm.search_addon_draft_description = ""
+    wm.search_addon_draft_manual_url = ""
+    wm.search_addon_draft_locations.clear()
+    wm.search_addon_draft_links.clear()
+
+
+def _start_new_entry(context, initial_location=None):
+    wm = context.window_manager
+    _reset_draft(wm)
+    if initial_location is not None:
+        space_type, region_type = initial_location
+        item = wm.search_addon_draft_locations.add()
+        item.space_type = space_type
+        item.region_type = region_type
+    wm.search_addon_compose_active = True
+    for window in wm.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
+
+
+class SEARCHADDON_OT_new_entry(bpy.types.Operator):
+    bl_idname = "searchaddon.new_entry"
+    bl_label = "New Entry"
+    bl_description = "Create a new registry entry of your own"
+
+    def execute(self, context):
+        _start_new_entry(context)
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_cancel_new_entry(bpy.types.Operator):
+    bl_idname = "searchaddon.cancel_new_entry"
+    bl_label = "Cancel"
+    bl_description = "Discard this draft and close the New Entry form"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        context.window_manager.search_addon_compose_active = False
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_pick_location(bpy.types.Operator):
+    bl_idname = "searchaddon.pick_location"
+    bl_label = "Pick a Location"
+    bl_description = "Click anywhere in Blender's interface to add that place to this entry"
+
+    def invoke(self, context, event):
+        context.window.cursor_modal_set('EYEDROPPER')
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            context.window.cursor_modal_restore()
+            return {'CANCELLED'}
+
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            area, region = _area_region_at(context, event.mouse_x, event.mouse_y)
+            context.window.cursor_modal_restore()
+            if area is not None and region is not None:
+                item = context.window_manager.search_addon_draft_locations.add()
+                item.space_type = area.type
+                item.region_type = region.type
+                for window in context.window_manager.windows:
+                    for a in window.screen.areas:
+                        a.tag_redraw()
+            return {'FINISHED'}
+
+        return {'PASS_THROUGH'}
+
+
+class SEARCHADDON_OT_add_draft_location(bpy.types.Operator):
+    bl_idname = "searchaddon.add_draft_location"
+    bl_label = "Add Location Manually"
+    bl_description = "Add a blank location row to type in yourself"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        item = context.window_manager.search_addon_draft_locations.add()
+        item.space_type = "VIEW_3D"
+        item.region_type = "WINDOW"
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_remove_draft_location(bpy.types.Operator):
+    bl_idname = "searchaddon.remove_draft_location"
+    bl_label = "Remove Location"
+    bl_options = {'INTERNAL'}
+
+    index: IntProperty(options={'HIDDEN'})
+
+    def execute(self, context):
+        locations = context.window_manager.search_addon_draft_locations
+        if 0 <= self.index < len(locations):
+            locations.remove(self.index)
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_add_draft_link(bpy.types.Operator):
+    bl_idname = "searchaddon.add_draft_link"
+    bl_label = "Add Link"
+    bl_options = {'INTERNAL'}
+
+    kind: StringProperty(options={'HIDDEN'})  # "image", "gif", or "video"
+
+    def execute(self, context):
+        item = context.window_manager.search_addon_draft_links.add()
+        item.kind = self.kind
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_remove_draft_link(bpy.types.Operator):
+    bl_idname = "searchaddon.remove_draft_link"
+    bl_label = "Remove Link"
+    bl_options = {'INTERNAL'}
+
+    index: IntProperty(options={'HIDDEN'})
+
+    def execute(self, context):
+        links = context.window_manager.search_addon_draft_links
+        if 0 <= self.index < len(links):
+            links.remove(self.index)
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
+    bl_idname = "searchaddon.save_draft_entry"
+    bl_label = "Save Entry"
+    bl_description = "Save this as one of your own registry entries"
+
+    def execute(self, context):
+        wm = context.window_manager
+        title = wm.search_addon_draft_title.strip()
+        if not title:
+            self.report({'ERROR'}, "Give this entry a title")
+            return {'CANCELLED'}
+
+        locations = []
+        for location in wm.search_addon_draft_locations:
+            if not location.space_type:
+                continue
+            locations.append({
+                "space_type": location.space_type,
+                "region_type": location.region_type or "WINDOW",
+                "ui_path": location.ui_path.strip(),
+            })
+        if not locations:
+            self.report({'ERROR'}, "Add at least one location")
+            return {'CANCELLED'}
+
+        category = wm.search_addon_draft_category.strip() or "uncategorized"
+        tags = [tag.strip() for tag in wm.search_addon_draft_tags.split(",") if tag.strip()]
+
+        images, gifs, videos = [], [], []
+        for link in wm.search_addon_draft_links:
+            url = link.url.strip()
+            if not url:
+                continue
+            if link.kind == "image":
+                images.append(url)
+            elif link.kind == "gif":
+                gifs.append(url)
+            elif link.kind == "video":
+                video = {"url": url}
+                if link.label.strip():
+                    video["label"] = link.label.strip()
+                if link.thumbnail_url.strip():
+                    video["thumbnail"] = link.thumbnail_url.strip()
+                videos.append(video)
+
+        entry_id = "user." + _slugify(category) + "." + _slugify(title)
+        entry = {
+            "id": entry_id,
+            "title": title,
+            "category": category,
+            "description": wm.search_addon_draft_description.strip(),
+            "manual_url": wm.search_addon_draft_manual_url.strip(),
+            "images": images,
+            "gifs": gifs,
+            "videos": videos,
+            "tags": tags,
+            "locations": locations,
+        }
+
+        storage.add_user_entry(entry)
+        registry.load_all(force=True)
+
+        self.report({'INFO'}, "Saved: " + title)
+        wm.search_addon_compose_active = False
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_export_contributions(bpy.types.Operator, ExportHelper):
+    bl_idname = "searchaddon.export_contributions"
+    bl_label = "Export Your Contributions"
+    bl_description = "Save your new entries and personal links to a file others can import"
+
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
+
+    def execute(self, context):
+        data = {
+            "schema_version": 1,
+            "export_kind": "blender_search_addon_contribution",
+            "entries": storage.load_user_entries().get("entries", []),
+            "personal_links": storage.load().get("links", {}),
+        }
+        try:
+            with open(self.filepath, "w", encoding="utf-8") as handle:
+                json.dump(data, handle, indent=2, ensure_ascii=False)
+        except OSError as error:
+            self.report({'ERROR'}, "Could not save file: " + str(error))
+            return {'CANCELLED'}
+
+        self.report(
+            {'INFO'},
+            f"Exported {len(data['entries'])} entries and links for {len(data['personal_links'])} items",
+        )
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_import_contributions(bpy.types.Operator, ImportHelper):
+    bl_idname = "searchaddon.import_contributions"
+    bl_label = "Import Contributions"
+    bl_description = "Add entries and personal links someone shared with you"
+
+    filename_ext = ".json"
+    filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
+
+    def execute(self, context):
+        try:
+            with open(self.filepath, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except (OSError, json.JSONDecodeError) as error:
+            self.report({'ERROR'}, "Could not read file: " + str(error))
+            return {'CANCELLED'}
+
+        imported_entries = 0
+        skipped_entries = 0
+        for entry in data.get("entries", []):
+            entry_id = entry.get("id")
+            if not entry_id:
+                continue
+            if registry.get(entry_id) is not None and not storage.has_user_entry(entry_id):
+                # This id belongs to a bundled entry. Do not silently shadow it.
+                skipped_entries += 1
+                continue
+            storage.add_user_entry(entry)
+            imported_entries += 1
+
+        imported_links = 0
+        for entry_id, links in data.get("personal_links", {}).items():
+            for link in links:
+                storage.add_link(entry_id, link.get("label", ""), link.get("url", ""))
+                imported_links += 1
+
+        registry.load_all(force=True)
+
+        self.report(
+            {'INFO'},
+            f"Imported {imported_entries} entries ({skipped_entries} skipped) and {imported_links} links",
+        )
+        return {'FINISHED'}
+
+
 class SEARCHADDON_OT_report_issue(bpy.types.Operator):
     bl_idname = "searchaddon.report_issue"
     bl_label = "Report a Problem"
@@ -493,6 +794,16 @@ classes = (
     SEARCHADDON_OT_check_pack_size,
     SEARCHADDON_OT_download_pack,
     SEARCHADDON_OT_clear_media_cache,
+    SEARCHADDON_OT_new_entry,
+    SEARCHADDON_OT_cancel_new_entry,
+    SEARCHADDON_OT_pick_location,
+    SEARCHADDON_OT_add_draft_location,
+    SEARCHADDON_OT_remove_draft_location,
+    SEARCHADDON_OT_add_draft_link,
+    SEARCHADDON_OT_remove_draft_link,
+    SEARCHADDON_OT_save_draft_entry,
+    SEARCHADDON_OT_export_contributions,
+    SEARCHADDON_OT_import_contributions,
     SEARCHADDON_OT_report_issue,
 )
 

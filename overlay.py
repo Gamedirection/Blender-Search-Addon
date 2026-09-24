@@ -85,10 +85,11 @@ def _draw():
 def _used_space_region_pairs():
     pairs = set()
     for entry in registry.all_entries().values():
-        space_type = entry.get("space_type")
-        region_type = entry.get("region_type", "WINDOW")
-        if space_type in _SPACE_CLASSES:
-            pairs.add((space_type, region_type))
+        for location in entry.get("locations", []):
+            space_type = location.get("space_type")
+            region_type = location.get("region_type") or "WINDOW"
+            if space_type in _SPACE_CLASSES:
+                pairs.add((space_type, region_type))
     return pairs
 
 

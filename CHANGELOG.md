@@ -6,6 +6,29 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-24
+
+### Added
+- Entries can now list more than one location (editor, region, and a
+  human path), instead of only one. The eyedropper's Tab key now also
+  cycles through a single entry's own other locations, not only other
+  entries sharing its category. Older single-location entries still
+  work unchanged.
+- A "New Entry" button in the Search sidebar panel, and Shift+Click
+  with the eyedropper active, both open a form to create a new registry
+  entry from inside Blender: title, category, tags, a plain text
+  description, a manual or source link, one or more locations (added by
+  clicking the real spot in Blender, or typed in by hand), and any
+  number of image, GIF, or video links.
+- Your own entries are stored separately from the bundled registry, so
+  an addon update never overwrites them, and they show up in search,
+  highlighting, and the eyedropper exactly like a bundled entry, marked
+  "(yours)".
+- "Export Your Contributions" and "Import Contributions" buttons in the
+  addon's preferences, to save your new entries and personal links to a
+  file, share it, and have someone else add them to their own copy of
+  the addon without overwriting anything they already have.
+
 ## [0.6.2] - 2026-09-24
 
 ### Fixed

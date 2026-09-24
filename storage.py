@@ -119,3 +119,38 @@ def record_recent(entry_id, limit=_RECENT_LIMIT):
     items.insert(0, entry_id)
     del items[limit:]
     _write_json(_STATE_FILE_NAME, data)
+
+
+# Entries a user creates themselves, kept separate from the bundled registry
+# so an addon update never overwrites them, and so they can be exported.
+
+_ENTRIES_FILE_NAME = "my_entries.json"
+
+
+def _default_user_entries():
+    return {"schema_version": _SCHEMA_VERSION, "entries": []}
+
+
+def load_user_entries():
+    data = _read_json(_ENTRIES_FILE_NAME, _default_user_entries)
+    data.setdefault("entries", [])
+    return data
+
+
+def has_user_entry(entry_id):
+    return any(entry.get("id") == entry_id for entry in load_user_entries()["entries"])
+
+
+def add_user_entry(entry):
+    """Add a new entry, or replace one with the same id."""
+    data = load_user_entries()
+    entries = [e for e in data["entries"] if e.get("id") != entry.get("id")]
+    entries.append(entry)
+    data["entries"] = entries
+    _write_json(_ENTRIES_FILE_NAME, data)
+
+
+def remove_user_entry(entry_id):
+    data = load_user_entries()
+    data["entries"] = [e for e in data["entries"] if e.get("id") != entry_id]
+    _write_json(_ENTRIES_FILE_NAME, data)
