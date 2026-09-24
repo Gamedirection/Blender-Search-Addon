@@ -16,7 +16,14 @@ parts of Blender's user interface.
   items you searched for recently.
 - It shows a link to the official Blender manual for many items.
 - It can show pictures, GIFs, and videos for an item, if the item has
-  them. You can turn each of these off in the addon's preferences.
+  them. It downloads these from the internet the first time it needs
+  them, then keeps a copy. You can turn each of these off in the
+  addon's preferences, or turn off internet access for pictures
+  entirely.
+- It has a "Download Offline Media Pack" button in preferences. It
+  checks the download size first, then downloads every picture, GIF,
+  and video thumbnail, so they work with no internet connection.
+- You can change its hotkeys from its own preferences panel.
 - It lets you save your own links for any item. You can save as many links
   as you want.
 - It gives you a button to report a problem or a missing item.
@@ -105,6 +112,29 @@ Tab to check the other items it found in that same area.
 
 Your links stay on your computer. They are not part of the addon's shared
 data.
+
+## How to Use Pictures Without the Internet
+
+1. Open Edit, then Preferences, then Add-ons.
+2. Find "Blender Search" and open its preferences.
+3. Click "Check Download Size" under "Offline Media Pack". Wait for the
+   estimate to appear.
+4. If the size is fine for you, click "Download Offline Media Pack".
+5. Wait for the download to finish. It can take a while and use
+   noticeable disk space, depending on how many pictures, GIFs, and
+   videos the registry has.
+6. Click "Clear Downloaded Media" at any time to delete what was
+   downloaded and free the disk space back up.
+
+You can also turn off "Allow Fetching Media From the Internet" if you
+never want this addon to access the internet on its own.
+
+## How to Change a Hotkey
+
+1. Open Edit, then Preferences, then Add-ons.
+2. Find "Blender Search" and open its preferences.
+3. Find "Hotkeys" near the bottom.
+4. Click the key shown, then press the new key you want to use.
 
 ## How to Add a New Registry Item
 

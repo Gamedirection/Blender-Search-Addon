@@ -11,6 +11,7 @@ from . import registry
 from . import storage
 from . import overlay
 from . import preferences
+from . import media
 from . import ui
 
 
@@ -323,6 +324,55 @@ class SEARCHADDON_OT_remove_personal_link(bpy.types.Operator):
         return {'FINISHED'}
 
 
+def _poll_pack_state():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            area.tag_redraw()
+    if media.pack_state["checking"] or media.pack_state["downloading"]:
+        return 0.3
+    return None
+
+
+def _start_ui_poll():
+    bpy.app.timers.register(_poll_pack_state, first_interval=0.3)
+
+
+class SEARCHADDON_OT_check_pack_size(bpy.types.Operator):
+    bl_idname = "searchaddon.check_pack_size"
+    bl_label = "Check Download Size"
+    bl_description = "Estimate how much data the offline media pack will download"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        media.start_size_check()
+        _start_ui_poll()
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_download_pack(bpy.types.Operator):
+    bl_idname = "searchaddon.download_pack"
+    bl_label = "Download Offline Media Pack"
+    bl_description = "Download every picture, GIF, and video thumbnail so they show without the internet. This can be large"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        media.start_pack_download()
+        _start_ui_poll()
+        return {'FINISHED'}
+
+
+class SEARCHADDON_OT_clear_media_cache(bpy.types.Operator):
+    bl_idname = "searchaddon.clear_media_cache"
+    bl_label = "Clear Downloaded Media"
+    bl_description = "Delete every picture, GIF, and video thumbnail this addon has downloaded"
+    bl_options = {'INTERNAL'}
+
+    def execute(self, context):
+        media.clear_cache()
+        self.report({'INFO'}, "Cleared the downloaded media cache")
+        return {'FINISHED'}
+
+
 class SEARCHADDON_OT_report_issue(bpy.types.Operator):
     bl_idname = "searchaddon.report_issue"
     bl_label = "Report a Problem"
@@ -342,6 +392,9 @@ classes = (
     SEARCHADDON_OT_play_video,
     SEARCHADDON_OT_add_personal_link,
     SEARCHADDON_OT_remove_personal_link,
+    SEARCHADDON_OT_check_pack_size,
+    SEARCHADDON_OT_download_pack,
+    SEARCHADDON_OT_clear_media_cache,
     SEARCHADDON_OT_report_issue,
 )
 

@@ -38,7 +38,7 @@
       "ui_path": "3D Viewport > Add menu > Light > Point, then adjust in Properties > Object Data",
       "description": "A light that shines evenly in every direction from a single point, similar to a bare light bulb.",
       "manual_url": "https://docs.blender.org/manual/en/latest/render/lights/light_object.html",
-      "images": ["images/lighting/point_light_viewport.png"],
+      "images": ["https://docs.blender.org/manual/en/latest/_images/render_lights_light-object_viewport.png"],
       "gifs": [],
       "videos": [],
       "tags": ["light", "point", "lamp", "lighting"]
@@ -57,7 +57,7 @@
       "videos": [
         {
           "url": "https://youtu.be/BRCAR-c6DFU",
-          "thumbnail": "images/video_examples/extrude_tool_explained_thumb.jpg",
+          "thumbnail": "https://i.ytimg.com/vi/BRCAR-c6DFU/hqdefault.jpg",
           "label": "Extrude Tool Explained (3Dnot2D)"
         }
       ],
@@ -73,7 +73,7 @@
       "description": "A modeling technique that twists geometry as it extrudes. Often built with a small add-on or a driver on the extrude rotation.",
       "manual_url": "https://bazaar.blendernation.com/listing/twisted-extrude/",
       "images": [],
-      "gifs": ["images/modeling/twisted_extrude.gif"],
+      "gifs": ["https://d1231c29xbpffx.cloudfront.net/uploads%2F1595495730283-twisted_extrude.gif"],
       "videos": [],
       "tags": ["extrude", "twist", "modeling"]
     }

@@ -10,6 +10,7 @@ import bpy.utils.previews
 from . import storage
 from . import registry
 from . import preferences
+from . import media
 
 _preview_collections = {}
 
@@ -22,18 +23,62 @@ def _preview_collection():
     return pcoll
 
 
-def _icon_id_for(relative_path):
-    """Load a bundled image or GIF and return its preview icon id. Only shows the first frame."""
+def _load_preview(key, path):
     pcoll = _preview_collection()
-    if relative_path in pcoll:
-        return pcoll[relative_path].icon_id
-    path = Path(__file__).parent / "resources" / relative_path
+    if key in pcoll:
+        return pcoll[key].icon_id
     if not path.exists():
         return 0
     try:
-        return pcoll.load(relative_path, str(path), 'IMAGE').icon_id
+        return pcoll.load(key, str(path), 'IMAGE').icon_id
     except Exception:
         return 0
+
+
+def _icon_id_from_bundled(relative_path):
+    """Load a picture bundled with the addon under resources/. Only shows the first frame of a GIF."""
+    path = Path(__file__).parent / "resources" / relative_path
+    return _load_preview(relative_path, path)
+
+
+def _icon_id_for_url(url):
+    """Load a cached picture for this URL. Only shows the first frame of a GIF.
+
+    Returns 0 if it is not cached yet. If internet media is allowed, this
+    also starts a background download so it is ready next time.
+    """
+    path = media.cache_path(url)
+    if path.exists():
+        return _load_preview(url, path)
+
+    prefs = preferences.get_prefs()
+    if prefs is None or prefs.allow_internet_media:
+        media.request_download(url)
+    return 0
+
+
+def _draw_media_thumbnail(layout, source, note=None):
+    """Draw one picture, whether it comes from a URL or a path bundled with the addon."""
+    is_remote = source.startswith("http://") or source.startswith("https://")
+    icon_id = _icon_id_for_url(source) if is_remote else _icon_id_from_bundled(source)
+
+    if icon_id:
+        layout.template_icon(icon_value=icon_id, scale=6.0)
+        if note:
+            layout.label(text=note)
+        return
+
+    if not is_remote:
+        layout.label(text="Picture not found: " + source, icon='ERROR')
+        return
+
+    prefs = preferences.get_prefs()
+    if prefs is not None and not prefs.allow_internet_media:
+        layout.label(text="Not shown. Internet media is turned off.", icon='INFO')
+    else:
+        layout.label(text="Loading picture...")
+    props = layout.operator("wm.url_open", text="Open Picture in Browser", icon='URL')
+    props.url = source
 
 
 def _draw_favorite_button(layout, entry_id):
@@ -66,17 +111,12 @@ def draw_entry_info(layout, entry, exact=True):
     show_videos = prefs is None or prefs.show_videos
 
     if show_images:
-        for image_path in entry.get("images", []):
-            icon_id = _icon_id_for(image_path)
-            if icon_id:
-                box.template_icon(icon_value=icon_id, scale=6.0)
+        for image_source in entry.get("images", []):
+            _draw_media_thumbnail(box, image_source)
 
     if show_gifs:
-        for gif_path in entry.get("gifs", []):
-            icon_id = _icon_id_for(gif_path)
-            if icon_id:
-                box.template_icon(icon_value=icon_id, scale=6.0)
-                box.label(text="First frame shown. GIFs do not play in this popup.")
+        for gif_source in entry.get("gifs", []):
+            _draw_media_thumbnail(box, gif_source, note="First frame shown. GIFs do not play in this popup.")
 
     if show_videos:
         for video in entry.get("videos", []):
@@ -85,9 +125,7 @@ def draw_entry_info(layout, entry, exact=True):
             label = video.get("label") or "Video"
             thumbnail = video.get("thumbnail")
             if thumbnail:
-                icon_id = _icon_id_for(thumbnail)
-                if icon_id:
-                    box.template_icon(icon_value=icon_id, scale=6.0)
+                _draw_media_thumbnail(box, thumbnail)
             row = box.row()
             row.label(text=label)
             if video.get("url"):

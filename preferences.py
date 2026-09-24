@@ -47,18 +47,54 @@ class SearchAddonPreferences(AddonPreferences):
         description="Show a Play Video button for bundled videos in the info popup",
         default=True,
     )
+    allow_internet_media: BoolProperty(
+        name="Allow Fetching Media From the Internet",
+        description="Download pictures, GIFs, and video thumbnails as needed. Turn off to only use what is already downloaded",
+        default=True,
+    )
 
     def draw(self, context):
+        from . import keymap
+        from . import media
+
         layout = self.layout
         layout.prop(self, "highlight_color")
         layout.prop(self, "auto_reveal_offscreen")
 
+        layout.separator()
         layout.label(text="Media in Popups")
         row = layout.row()
         row.prop(self, "show_images", toggle=True)
         row.prop(self, "show_gifs", toggle=True)
         row.prop(self, "show_videos", toggle=True)
+        layout.prop(self, "allow_internet_media")
 
+        box = layout.box()
+        box.label(text="Offline Media Pack")
+        box.label(text="Download every picture, GIF, and video thumbnail so they show without the internet.")
+        box.label(text="This can be large. Check the size first.", icon='ERROR')
+
+        state = media.pack_state
+        if state["checking"]:
+            box.label(text=f"Checking size... ({state['checked_count']} of {state['total_count']})")
+        elif state["downloading"]:
+            box.label(text=f"Downloading... ({state['done_count']} of {state['total_count']})")
+        elif state["total_count"]:
+            size_text = media.format_size(state["estimated_bytes"])
+            note = f", {state['unknown_count']} file(s) of unknown size not counted" if state["unknown_count"] else ""
+            box.label(text=f"Estimated download: {size_text}{note}", icon='INFO')
+
+        row = box.row()
+        row.operator("searchaddon.check_pack_size", icon='FILE_REFRESH')
+        row.operator("searchaddon.download_pack", icon='IMPORT')
+
+        box.label(text="Currently downloaded: " + media.format_size(media.cached_size_bytes()))
+        box.operator("searchaddon.clear_media_cache", icon='TRASH')
+
+        layout.separator()
+        keymap.draw_settings(layout, context)
+
+        layout.separator()
         layout.operator("searchaddon.report_issue", icon='URL')
 
 

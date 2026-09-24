@@ -30,8 +30,8 @@ Each file holds one JSON object with two fields.
 | `ui_path` | Yes | text | A short, human path to the item, such as `3D Viewport > Header > Proportional Editing dropdown`. |
 | `description` | Yes | text | A short, clear explanation of what the item does. |
 | `manual_url` | Yes | text | A link to the matching page on `docs.blender.org`. |
-| `images` | No | list of text | Paths to pictures under the `resources/images` folder. |
-| `gifs` | No | list of text | Paths to GIF files under the `resources/images` folder. Only the first frame shows in the popup. |
+| `images` | No | list of text | Pictures to show in the popup. See "Pictures, GIFs, and Video" below. |
+| `gifs` | No | list of text | GIF files to show in the popup. Only the first frame shows. See below. |
 | `videos` | No | list | Either a path to a local video file, or an object with `url`, `label`, and `thumbnail` (see below). |
 | `tags` | No | list of text | Extra words people might search for. Also used by category search, see below. |
 | `rna_hint` | No | object | Optional. Holds `operator` and `property` values, kept for future use by more precise matching. |
@@ -39,22 +39,46 @@ Each file holds one JSON object with two fields.
 `manual_url` is optional. Most entries link to a page on `docs.blender.org`, but a
 community tool or technique can link anywhere useful instead, or leave the field out.
 
+## Pictures, GIFs, and Video
+
+Most registry entries should use a web address (starting with `http://` or
+`https://`) for `images`, `gifs`, and video `thumbnail` fields. This is the
+normal case. The addon downloads the picture the first time it is needed and
+keeps a copy, so it loads instantly after that. Nothing is bundled with the
+addon itself, which keeps it small.
+
+A picture can also be a path to a file placed under this addon's own
+`resources` folder, if a contributor wants a picture that always works with
+no internet connection at all. Use a plain relative path, such as
+`images/my_folder/my_picture.png`, instead of a web address.
+
+A user can turn off internet pictures entirely in the addon's preferences.
+When that setting is off, only pictures already downloaded, or bundled under
+`resources`, will show. The preferences panel also has a "Download Offline
+Media Pack" button that checks the download size first, then downloads every
+picture, GIF, and video thumbnail used by the registry, so everything works
+without the internet from then on.
+
 ### Video Entries
 
 A video entry can be a plain text path to a local file under `resources`, which
-shows a "Play Video" button that opens the file in the user's system player. It
-can also be an object, for an external video such as one on YouTube:
+shows a "Video" button that opens the file in the user's system player. It can
+also be an object, for an external video such as one on YouTube:
 
 ```json
 {
   "label": "Extrude Tool Explained (3Dnot2D)",
   "url": "https://youtu.be/BRCAR-c6DFU",
-  "thumbnail": "images/video_examples/extrude_tool_explained_thumb.jpg"
+  "thumbnail": "https://i.ytimg.com/vi/BRCAR-c6DFU/hqdefault.jpg"
 }
 ```
 
-The `thumbnail` is a picture path, shown the same way as an image. The "Video"
-button next to it opens the `url` in the user's browser.
+The `thumbnail` is a picture, shown the same way as an image (a web address
+downloads and caches, a relative path reads a bundled file). The "Video"
+button next to it opens the `url` in the user's browser. Blender's popups
+cannot play video or an animated GIF, so an external video always opens
+outside Blender. If the thumbnail cannot be shown, the button to open it
+directly is always there as a fallback.
 
 ## Searching by Category
 

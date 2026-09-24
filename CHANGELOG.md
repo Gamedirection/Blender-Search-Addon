@@ -6,6 +6,25 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-24
+
+### Added
+- Pictures, GIFs, and video thumbnails are now fetched from the internet
+  and cached on first use, instead of being bundled with the addon. This
+  keeps the addon itself small.
+- A preference, "Allow Fetching Media From the Internet", to turn this
+  off entirely.
+- A "Download Offline Media Pack" section in preferences: check the
+  estimated download size first, then download everything so it works
+  with no internet connection. A "Clear Downloaded Media" button undoes
+  this and frees the disk space.
+- Hotkeys can now be changed from the addon's own preferences panel,
+  instead of only through Blender's separate Keymap editor.
+
+### Changed
+- The example registry entries (Point Light, Twisted Extrude, Extrude)
+  now reference their pictures by web address instead of a bundled copy.
+
 ## [0.3.0] - 2026-09-24
 
 ### Added
