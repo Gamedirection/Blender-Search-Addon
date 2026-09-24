@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "shader.principled_bsdf",
+      "title": "Principled BSDF",
+      "category": "shading",
+      "space_type": "NODE_EDITOR",
+      "region_type": "WINDOW",
+      "ui_path": "Shader Editor > Add > Shader > Principled BSDF",
+      "description": "A single shader node that models most common materials, such as metal, plastic, and skin, in one node.",
+      "manual_url": "https://docs.blender.org/manual/en/latest/render/shader_nodes/shader/principled.html",
+      "images": [],
+      "keywords": ["shader", "material", "bsdf", "principled"]
+    }
+  ]
+}

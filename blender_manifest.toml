@@ -1,0 +1,22 @@
+schema_version = "1.0.0"
+
+id = "blender_search_addon"
+version = "0.1.0"
+name = "Blender Search"
+tagline = "Search Blender's interface, inspect elements, and save your own links"
+maintainer = "GameDirection <alex@gamedirection.net>"
+type = "add-on"
+
+website = "https://github.com/Gamedirection/Blender-Search-Addon"
+
+tags = ["Interface"]
+
+blender_version_min = "4.2.0"
+
+license = [
+  "SPDX:MIT",
+]
+
+[permissions]
+network = "Opens your browser to the Blender manual and to this addon's issue page"
+files = "Saves your personal links in Blender's user configuration folder"

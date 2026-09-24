@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "properties.render_engine",
+      "title": "Render Engine",
+      "category": "rendering",
+      "space_type": "PROPERTIES",
+      "region_type": "WINDOW",
+      "ui_path": "Properties > Render tab > Render Engine dropdown",
+      "description": "Chooses which engine Blender uses to render your scene, such as EEVEE or Cycles.",
+      "manual_url": "https://docs.blender.org/manual/en/latest/render/index.html",
+      "images": [],
+      "keywords": ["render", "engine", "eevee", "cycles"]
+    }
+  ]
+}

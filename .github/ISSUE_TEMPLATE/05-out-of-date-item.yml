@@ -1,0 +1,31 @@
+name: Out of Date Item
+description: Report a registry item that no longer matches current Blender.
+title: "[Out of Date]: "
+labels: ["out-of-date", "registry"]
+body:
+  - type: input
+    id: item-name
+    attributes:
+      label: Registry Item Name
+      description: The name as it is currently documented.
+    validations:
+      required: true
+  - type: input
+    id: blender-version
+    attributes:
+      label: Blender Version Where It Is Out of Date
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What Has Changed
+      description: Was it renamed, moved, or removed?
+    validations:
+      required: true
+  - type: textarea
+    id: correct-info
+    attributes:
+      label: Correct Current Name or Location
+    validations:
+      required: false

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "view3d.proportional_edit_falloff",
+      "title": "Proportional Editing Falloff",
+      "category": "modeling",
+      "space_type": "VIEW_3D",
+      "region_type": "TOOL_HEADER",
+      "ui_path": "3D Viewport > Header > Proportional Editing dropdown",
+      "description": "Controls the falloff curve used by proportional editing, so nearby geometry moves more than distant geometry.",
+      "manual_url": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/proportional_editing.html",
+      "images": [],
+      "keywords": ["proportional", "falloff", "soft selection", "o key"]
+    },
+    {
+      "id": "view3d.snapping",
+      "title": "Snapping",
+      "category": "modeling",
+      "space_type": "VIEW_3D",
+      "region_type": "HEADER",
+      "ui_path": "3D Viewport > Header > Snapping magnet icon",
+      "description": "Turns on snapping, so moved objects or points lock to a target such as a grid point or another vertex.",
+      "manual_url": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/snap.html",
+      "images": [],
+      "keywords": ["snap", "magnet", "grid"]
+    }
+  ]
+}

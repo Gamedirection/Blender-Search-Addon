@@ -1,0 +1,68 @@
+name: Missed Item
+description: Report a Blender menu, panel, operator, or setting the search registry does not include yet.
+title: "[Missed Item]: "
+labels: ["missed-item", "registry"]
+body:
+  - type: markdown
+    attributes:
+      value: Use this form to tell us about a part of Blender's interface that this addon does not find yet.
+  - type: input
+    id: element-name
+    attributes:
+      label: Element Name
+      description: The exact name or label shown in Blender.
+    validations:
+      required: true
+  - type: dropdown
+    id: element-type
+    attributes:
+      label: Element Type
+      options:
+        - Menu Item
+        - Panel
+        - Operator
+        - Property
+        - Tool
+        - Preference
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location in Blender's Interface
+      placeholder: "e.g. Edit Mode > Mesh > Merge > By Distance"
+    validations:
+      required: true
+  - type: dropdown
+    id: editor
+    attributes:
+      label: Blender Editor or Area
+      options:
+        - 3D Viewport
+        - Properties
+        - Shader Editor
+        - Outliner
+        - Preferences
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: blender-version
+    attributes:
+      label: Blender Version Tested
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Why This Is Useful To Document
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Context
+      description: Add a screenshot or a link if you have one.
+    validations:
+      required: false

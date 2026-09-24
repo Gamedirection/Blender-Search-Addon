@@ -1,0 +1,29 @@
+name: Incorrect Info on Item
+description: Report wrong details on an existing registry item.
+title: "[Incorrect Info]: "
+labels: ["incorrect-info", "registry"]
+body:
+  - type: input
+    id: item-name
+    attributes:
+      label: Registry Item Name
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What Information Is Incorrect
+    validations:
+      required: true
+  - type: textarea
+    id: correct-info
+    attributes:
+      label: What It Should Say Instead
+    validations:
+      required: true
+  - type: input
+    id: blender-version
+    attributes:
+      label: Blender Version
+    validations:
+      required: false

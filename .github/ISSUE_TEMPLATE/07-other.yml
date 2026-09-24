@@ -1,0 +1,17 @@
+name: Other
+description: Anything that does not fit the other categories.
+title: "[Other]: "
+labels: ["other"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe Your Issue or Idea
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Context
+    validations:
+      required: false

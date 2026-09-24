@@ -1,0 +1,35 @@
+name: Problem
+description: Report a problem you had while using the addon that is not a crash.
+title: "[Problem]: "
+labels: ["problem"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Problem
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: What You Were Trying To Do
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What Happened Instead
+    validations:
+      required: true
+  - type: input
+    id: blender-version
+    attributes:
+      label: Blender Version
+    validations:
+      required: false
+  - type: input
+    id: addon-version
+    attributes:
+      label: Addon Version
+    validations:
+      required: false
