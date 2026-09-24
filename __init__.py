@@ -2,7 +2,7 @@
 bl_info = {
     "name": "Blender Search",
     "author": "GameDirection",
-    "version": (0, 9, 0),
+    "version": (0, 9, 1),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Search",
     "description": "Search Blender's interface, inspect elements with an eyedropper, and save your own links.",
@@ -16,6 +16,7 @@ bl_info = {
 def register():
     from . import registry
     registry.load_all()
+    registry.register()
 
     from . import properties
     from . import preferences
@@ -38,6 +39,7 @@ def register():
 
 
 def unregister():
+    from . import registry
     from . import keymap
     from . import overlay
     from . import ui
@@ -51,6 +53,7 @@ def unregister():
     operators.unregister()
     preferences.unregister()
     properties.unregister()
+    registry.unregister()
 
 
 if __name__ == "__main__":

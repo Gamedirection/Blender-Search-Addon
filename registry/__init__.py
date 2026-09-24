@@ -19,6 +19,8 @@ import json
 import re
 from pathlib import Path
 
+import bpy
+
 from .. import storage
 
 _ENTRIES = {}
@@ -224,3 +226,33 @@ def search(query, limit=20):
         return _search_in_category(category_part, item_part, limit)
 
     return _ranked_search(_ENTRIES.values(), query, limit)
+
+
+def _manual_map_hook():
+    """Lets Blender's own native tooltip and right-click "Online Manual"
+    link point at one of our entries' manual_url, for any operator or
+    property (built-in or not) whose RNA identifier matches an entry's
+    rna_hint. This does not identify a hovered widget for us; Blender
+    resolves that itself and only calls this to look up a URL, if and when
+    the user invokes its own "Online Manual" action. See
+    bpy.utils.register_manual_map() for the mechanism.
+    """
+    pairs = []
+    for entry in _ENTRIES.values():
+        rna_hint = entry.get("rna_hint")
+        manual_url = entry.get("manual_url")
+        if not rna_hint or not manual_url:
+            continue
+        for key in ("operator", "property"):
+            pattern = rna_hint.get(key)
+            if pattern:
+                pairs.append((pattern.lower(), manual_url))
+    return "", pairs  # empty prefix; each "suffix" is already a full URL
+
+
+def register():
+    bpy.utils.register_manual_map(_manual_map_hook)
+
+
+def unregister():
+    bpy.utils.unregister_manual_map(_manual_map_hook)

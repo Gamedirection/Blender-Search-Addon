@@ -425,6 +425,13 @@ def _draw_compose_panel(layout, context):
     box.prop(wm, "search_addon_draft_manual_url")
 
     box.separator()
+    box.label(text="Advanced: Link to a Built-in Button (optional)")
+    box.label(text="If you know it, Blender's own tooltip and right-click Online")
+    box.label(text="Manual link for this can point at your link above instead.")
+    box.prop(wm, "search_addon_draft_rna_operator")
+    box.prop(wm, "search_addon_draft_rna_property")
+
+    box.separator()
     box.label(text="Locations (Tab through these in the eyedropper)")
     box.label(text="\"Add by Clicking\" remembers exactly where you clicked, so this")
     box.label(text="highlights just that spot instead of the whole area, but only")

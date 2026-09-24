@@ -85,6 +85,18 @@ def register():
         name="Manual or Source Link",
         description="A link to the Blender manual, or any other page about this",
     )
+    WindowManager.search_addon_draft_rna_operator = StringProperty(
+        name="Operator ID",
+        description=(
+            "Advanced, optional. Example: bpy.ops.mesh.primitive_cube_add. If set, "
+            "Blender's own tooltip and right-click Online Manual link for this "
+            "built-in button can point at your Manual or Source Link instead"
+        ),
+    )
+    WindowManager.search_addon_draft_rna_property = StringProperty(
+        name="Property Path",
+        description="Advanced, optional. Example: bpy.types.ToolSettings.proportional_edit",
+    )
     WindowManager.search_addon_draft_locations = CollectionProperty(type=SearchAddonDraftLocation)
     WindowManager.search_addon_draft_links = CollectionProperty(type=SearchAddonDraftLink)
 
@@ -92,6 +104,8 @@ def register():
 def unregister():
     del WindowManager.search_addon_draft_links
     del WindowManager.search_addon_draft_locations
+    del WindowManager.search_addon_draft_rna_property
+    del WindowManager.search_addon_draft_rna_operator
     del WindowManager.search_addon_draft_manual_url
     del WindowManager.search_addon_draft_description_text
     del WindowManager.search_addon_draft_tags

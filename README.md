@@ -183,7 +183,13 @@ one for you.
    each precise spot belongs to, as a reminder.
 4. Add any pictures, GIFs, or videos as web links. See "How to Use
    Pictures Without the Internet" above for how these work.
-5. Click "Save Entry". It is saved on your computer, and you can search
+5. If you happen to know the exact operator or property this entry is
+   about, you can fill in "Operator ID" or "Property Path" under
+   Advanced. This lets Blender's own tooltip and right-click Online
+   Manual link, for that built-in button, point at your Manual or
+   Source Link too. It is entirely optional; leave it blank if you do
+   not know it.
+6. Click "Save Entry". It is saved on your computer, and you can search
    for it right away.
 
 ## How to Change or Delete an Entry You Made

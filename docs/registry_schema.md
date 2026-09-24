@@ -32,7 +32,7 @@ Each file holds one JSON object with two fields.
 | `gifs` | No | list of text | GIF files. Shown as an "Open GIF" button in the popup, not an inline picture. See below. |
 | `videos` | No | list | Either a path to a local video file, or an object with `url`, `label`, and `thumbnail` (see below). |
 | `tags` | No | list of text | Extra words people might search for. Also used by category search, see below. |
-| `rna_hint` | No | object | Optional. Holds `operator` and `property` values, kept for future use by more precise matching. |
+| `rna_hint` | No | object | Optional. `{"operator": "...", "property": "..."}`. See "Linking to a Built-in Button" below. |
 
 ## Locations
 
@@ -150,6 +150,29 @@ optional and older entries do not have one:
   Viewport highlights the entire viewport, which is rarely what you want,
   even for something started with a keyboard shortcut like Extrude's E key.
   Point contributors instead at the menu or header item used to reach it.
+
+## Linking to a Built-in Button
+
+`rna_hint` is optional: `{"operator": "bpy.ops.mesh.primitive_cube_add", "property": null}`
+or `{"operator": null, "property": "bpy.types.ToolSettings.proportional_edit"}`. When an
+entry has one, and has a `manual_url`, this addon registers it with Blender's own
+`bpy.utils.register_manual_map()`. If the identifier matches, Blender's own native
+tooltip and its right-click "Online Manual Reference" link, for that operator or
+property, point at this entry's `manual_url` instead of (or in addition to) whatever
+Blender would normally show. This works for any built-in Blender button, not only
+ones this addon documents, and does not depend on screen layout at all, since
+Blender resolves the match by identifier, not by position.
+
+This is a smaller thing than it might sound: it does not let this addon detect which
+button is hovered (Blender's public API has no way to do that; the eyedropper's
+"closest known match" behavior is the honest limit of what is possible today), it
+only rewrites a URL Blender already knows how to show, if and when the user invokes
+that native action themselves.
+
+The exact identifier format Blender expects has not been confirmed against a live
+Blender session, only the registration mechanism itself, read from Blender's own
+source. Use the pattern shown above (lowercase, `bpy.ops.` or `bpy.types.` prefix)
+as a starting point, and expect it may need adjusting after a first real test.
 
 ## Worked Example
 

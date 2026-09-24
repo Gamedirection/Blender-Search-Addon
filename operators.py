@@ -602,6 +602,8 @@ def _reset_draft(wm):
     wm.search_addon_draft_category = ""
     wm.search_addon_draft_tags = ""
     wm.search_addon_draft_manual_url = ""
+    wm.search_addon_draft_rna_operator = ""
+    wm.search_addon_draft_rna_property = ""
     wm.search_addon_draft_locations.clear()
     wm.search_addon_draft_links.clear()
 
@@ -635,6 +637,10 @@ def _load_entry_into_draft(context, entry):
     wm.search_addon_draft_category = entry.get("category", "")
     wm.search_addon_draft_tags = ", ".join(entry.get("tags", []))
     wm.search_addon_draft_manual_url = entry.get("manual_url", "")
+
+    rna_hint = entry.get("rna_hint") or {}
+    wm.search_addon_draft_rna_operator = rna_hint.get("operator") or ""
+    wm.search_addon_draft_rna_property = rna_hint.get("property") or ""
 
     description = entry.get("description", "")
     if description:
@@ -879,6 +885,9 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
         description_text = wm.search_addon_draft_description_text
         description = description_text.as_string().strip() if description_text is not None else ""
 
+        rna_operator = wm.search_addon_draft_rna_operator.strip()
+        rna_property = wm.search_addon_draft_rna_property.strip()
+
         entry_id = wm.search_addon_draft_editing_id or ("user." + _slugify(category) + "." + _slugify(title))
         entry = {
             "id": entry_id,
@@ -892,6 +901,8 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
             "tags": tags,
             "locations": locations,
         }
+        if rna_operator or rna_property:
+            entry["rna_hint"] = {"operator": rna_operator or None, "property": rna_property or None}
 
         storage.add_user_entry(entry)
         registry.load_all(force=True)

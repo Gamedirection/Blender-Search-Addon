@@ -6,6 +6,29 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-24
+
+### Added
+- An entry can now list an `rna_hint` (an operator id or property path)
+  to register with Blender's own `bpy.utils.register_manual_map()`.
+  When set, Blender's own native tooltip and its right-click "Online
+  Manual Reference" link, for that built-in operator or property,
+  point at this entry's Manual or Source Link. This works for any
+  built-in Blender button, not only ones this addon documents, and
+  does not depend on screen layout, since Blender resolves the match
+  by identifier rather than position. It does not let this addon
+  detect which button is hovered; research into three independent
+  Blender developer/community discussions confirmed there is no
+  public API for that, and none for drawing extra content into the
+  native tooltip either, so this only rewrites a URL Blender already
+  knows how to show, if and when the user invokes that native action
+  themselves.
+- The New Entry form has an optional "Operator ID" / "Property Path"
+  section under Advanced for this.
+- The exact identifier format Blender expects has not been confirmed
+  live, only the registration mechanism itself, read from Blender's
+  own source; documented in `docs/registry_schema.md` as best-effort.
+
 ## [0.9.0] - 2026-09-24
 
 ### Fixed
