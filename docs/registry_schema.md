@@ -51,13 +51,22 @@ more than one place (the eyedropper's Tab key cycles through them, see
 - `space_type`: the Blender editor, such as `VIEW_3D`, `PROPERTIES`, `NODE_EDITOR`, or `OUTLINER`.
 - `region_type`: the part of the editor, such as `WINDOW`, `HEADER`, `TOOL_HEADER`, or `UI`. See "Choosing region_type" below.
 - `ui_path`: a short, human path to the item, such as `3D Viewport > Header > Proportional Editing dropdown`.
-- `point` (optional): `{"x": 0.0-1.0, "y": 0.0-1.0}`, how far across and down the
-  region a specific button or icon sits, as a fraction of the region's width
-  and height. When present, the addon highlights a small box there instead of
+- `point` (optional): `{"x": 0.0-1.0, "y": 0.0-1.0, "workspace": "Layout"}`,
+  how far across and down the region a specific button or icon sits, as a
+  fraction of the region's width and height, plus the name of the workspace
+  tab it was captured in. When present, and only while the current workspace
+  tab matches `workspace`, the addon highlights a small box there instead of
   the whole region, and prefers this entry over others in the same region
-  when the eyedropper's cursor is close to it. The New Entry form's "Add by
+  when the eyedropper's cursor is close to it. In any other workspace, it
+  falls back to highlighting the whole region, the same as if there were no
+  `point` at all, since a pixel position is only meaningful in the specific
+  workspace it was captured in (a different workspace can arrange or size
+  even the same kind of editor differently). The New Entry form's "Add by
   Clicking" button fills this in automatically from where you actually
-  clicked; there is no need to work out the numbers yourself.
+  clicked and which workspace tab you were on; there is no need to work out
+  the numbers yourself. Exporting your contributions strips `point` from
+  every location before saving the file, since a pixel position tied to
+  your own workspace arrangement means nothing on someone else's screen.
 
 Older entries written before this addon supported more than one location
 still work: a single `space_type`, `region_type`, and `ui_path` directly on

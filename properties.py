@@ -15,6 +15,11 @@ class SearchAddonDraftLocation(PropertyGroup):
     )
     point_x: FloatProperty(default=0.5, min=0.0, max=1.0)
     point_y: FloatProperty(default=0.5, min=0.0, max=1.0)
+    point_workspace: StringProperty(
+        name="Captured In",
+        description="The workspace tab this precise spot was clicked in. Only used to highlight there again",
+        default="",
+    )
 
 
 class SearchAddonDraftLink(PropertyGroup):

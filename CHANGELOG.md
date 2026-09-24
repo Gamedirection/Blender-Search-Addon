@@ -6,6 +6,25 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-24
+
+### Fixed
+- A precise spot added with "Add by Clicking" did not travel between
+  workspace tabs, since a pixel position is only meaningful in the
+  specific workspace it was captured in. It now remembers which
+  workspace it was captured in, and only highlights that precise spot
+  while the current workspace matches; on any other workspace tab, it
+  falls back to highlighting the whole region, same as a location with
+  no precise spot at all.
+
+### Added
+- The New Entry form now shows which workspace each precise spot
+  belongs to, as a reminder.
+- Exporting your contributions no longer includes a precise spot for
+  any location, since a pixel position tied to one person's own
+  workspace arrangement is meaningless, and now inert, on someone
+  else's machine.
+
 ## [0.8.1] - 2026-09-24
 
 ### Changed

@@ -176,7 +176,11 @@ one for you.
    up. You can also type the editor and region names in yourself. A
    location added by clicking remembers exactly where you clicked, so
    it can highlight just that small button or icon later instead of
-   the whole toolbar or panel.
+   the whole toolbar or panel, but only while you are on the same
+   workspace tab you clicked it in. On a different tab, it highlights
+   the whole area instead, since a precise spot only makes sense on
+   the workspace it was captured on. The form shows which workspace
+   each precise spot belongs to, as a reminder.
 4. Add any pictures, GIFs, or videos as web links. See "How to Use
    Pictures Without the Internet" above for how these work.
 5. Click "Save Entry". It is saved on your computer, and you can search
@@ -206,6 +210,11 @@ an addon update never overwrites them.
 4. The other person clicks "Import Contributions" in their own
    preferences and picks your file. Their existing entries and links
    are kept; your file only adds to them.
+
+A precise spot added with "Add by Clicking" is not included in an
+exported file, since it only means something on your own workspace
+arrangement. The other person can add their own by clicking, on their
+own copy of the entry, if they want one.
 
 ## How to Add an Entry by Editing a File
 

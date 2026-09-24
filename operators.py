@@ -21,12 +21,31 @@ from . import ui
 _POINT_HIGHLIGHT_HALF_SIZE = 26
 
 
-def _location_rect(region, location):
+def _current_workspace_name(context=None):
+    ctx = context or bpy.context
+    return ctx.workspace.name if ctx.workspace else ""
+
+
+def _point_for_current_layout(location, context=None):
+    """A location's point, but only if it was captured in the workspace tab
+    that is active right now. A pixel position is only meaningful in the
+    specific workspace it was clicked in, since a different workspace can
+    arrange or size even the same kind of editor differently."""
+    point = (location or {}).get("point")
+    if not point:
+        return None
+    if point.get("workspace") != _current_workspace_name(context):
+        return None
+    return point
+
+
+def _location_rect(region, location, context=None):
     """The box to highlight for one location. Blender does not give addons a
     reliable way to find one button's exact position, but a location saved
     with a precise spot (captured by clicking, see SEARCHADDON_OT_pick_location)
-    can highlight a small box there instead of the whole region."""
-    point = (location or {}).get("point")
+    can highlight a small box there instead of the whole region, as long as
+    the current workspace tab matches the one it was captured in."""
+    point = _point_for_current_layout(location, context)
     if point:
         px = point["x"] * region.width
         py = point["y"] * region.height
@@ -289,7 +308,7 @@ class SEARCHADDON_OT_eyedropper(bpy.types.Operator):
             for location in entry["locations"]:
                 if location["space_type"] != space_type or location["region_type"] != region_type:
                     continue
-                point = location.get("point")
+                point = _point_for_current_layout(location)
                 if point is None:
                     continue
                 d = (point["x"] - hx) ** 2 + (point["y"] - hy) ** 2
@@ -633,6 +652,7 @@ def _load_entry_into_draft(context, entry):
             item.has_point = True
             item.point_x = point.get("x", 0.5)
             item.point_y = point.get("y", 0.5)
+            item.point_workspace = point.get("workspace", "")
 
     for url in entry.get("images", []):
         item = wm.search_addon_draft_links.add()
@@ -743,6 +763,7 @@ class SEARCHADDON_OT_pick_location(bpy.types.Operator):
                     item.has_point = True
                     item.point_x = min(1.0, max(0.0, (event.mouse_x - region.x) / region.width))
                     item.point_y = min(1.0, max(0.0, (event.mouse_y - region.y) / region.height))
+                    item.point_workspace = _current_workspace_name(context)
                 _redraw_all(context.window_manager)
             return {'FINISHED'}
 
@@ -825,7 +846,11 @@ class SEARCHADDON_OT_save_draft_entry(bpy.types.Operator):
                 "ui_path": location.ui_path.strip(),
             }
             if location.has_point:
-                location_dict["point"] = {"x": location.point_x, "y": location.point_y}
+                location_dict["point"] = {
+                    "x": location.point_x,
+                    "y": location.point_y,
+                    "workspace": location.point_workspace,
+                }
             locations.append(location_dict)
         if not locations:
             self.report({'ERROR'}, "Add at least one location")
@@ -885,11 +910,26 @@ class SEARCHADDON_OT_export_contributions(bpy.types.Operator, ExportHelper):
     filename_ext = ".json"
     filter_glob: StringProperty(default="*.json", options={'HIDDEN'})
 
+    @staticmethod
+    def _without_points(entries):
+        """Strip each location's precise spot before sharing an entry. A
+        pixel position is tied to one person's own workspace arrangement, so
+        it is meaningless, and now inert, on anyone else's machine."""
+        stripped = []
+        for entry in entries:
+            entry = dict(entry)
+            entry["locations"] = [
+                {key: value for key, value in location.items() if key != "point"}
+                for location in entry.get("locations", [])
+            ]
+            stripped.append(entry)
+        return stripped
+
     def execute(self, context):
         data = {
             "schema_version": 1,
             "export_kind": "blender_search_addon_contribution",
-            "entries": storage.load_user_entries().get("entries", []),
+            "entries": self._without_points(storage.load_user_entries().get("entries", [])),
             "personal_links": storage.load().get("links", {}),
         }
         try:
