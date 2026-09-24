@@ -6,6 +6,23 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-24
+
+### Added
+- Search now matches an item's category and tags, not only its title
+  (the registry field `keywords` was renamed to `tags`).
+- Category-scoped search using a pipe: `category|term` searches only
+  inside one category. `category|` with nothing after the pipe lists
+  every entry in that category.
+- Three example registry entries showing each media type: Point Light
+  (image), Twisted Extrude (GIF), and Extrude (video, linking to an
+  external YouTube video with a local thumbnail).
+- Video entries can now be an object with `label`, `url`, and
+  `thumbnail`, for linking to an external video instead of only a
+  bundled local file.
+- `manual_url` is now optional, so a community tool or technique
+  without an official Blender manual page can still be documented.
+
 ## [0.2.0] - 2026-09-24
 
 ### Added

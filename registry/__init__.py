@@ -1,5 +1,13 @@
 # SPDX-License-Identifier: MIT
-"""Loads and searches the JSON registry of documented Blender UI items."""
+"""Loads and searches the JSON registry of documented Blender UI items.
+
+Search supports a category filter using a pipe: "category|item" searches
+only inside entries whose category matches the left side, using the right
+side as the search text. Typing "category|" with nothing after the pipe
+lists every entry in that category. A plain search with no pipe still
+finds items across every category, including ones that also belong to a
+category someone could have searched for directly.
+"""
 
 import json
 import re
@@ -15,7 +23,6 @@ _REQUIRED_FIELDS = (
     "space_type",
     "region_type",
     "description",
-    "manual_url",
 )
 
 _WORD_RE = re.compile(r"[a-z0-9]+")
@@ -61,6 +68,11 @@ def get(entry_id):
     return _ENTRIES.get(entry_id)
 
 
+def categories():
+    load_all()
+    return sorted({entry["category"] for entry in _ENTRIES.values()})
+
+
 def entries_for_space(space_type, region_type=None):
     """Return registry entries for an editor, preferring an exact region match."""
     load_all()
@@ -76,17 +88,15 @@ def _tokens(text):
     return set(_WORD_RE.findall(text.lower()))
 
 
-def search(query, limit=20):
-    """Score every entry against a query and return the best matches."""
-    load_all()
+def _ranked_search(entries, query, limit):
     query = query.strip().lower()
     if not query:
         return []
 
     query_tokens = _tokens(query)
     scored = []
-    for entry in _ENTRIES.values():
-        haystack = " ".join((entry["title"], entry["category"], " ".join(entry.get("keywords", []))))
+    for entry in entries:
+        haystack = " ".join((entry["title"], entry["category"], " ".join(entry.get("tags", []))))
         haystack_tokens = _tokens(haystack)
 
         if query in entry["title"].lower():
@@ -102,3 +112,32 @@ def search(query, limit=20):
 
     scored.sort(key=lambda item: (-item[0], item[1]))
     return [entry for _score, _title, entry in scored[:limit]]
+
+
+def _search_in_category(category_query, item_query, limit):
+    category_query = category_query.strip().lower()
+    scoped = [entry for entry in _ENTRIES.values() if category_query in entry["category"].lower()]
+
+    if not item_query.strip():
+        scoped.sort(key=lambda entry: entry["title"])
+        return scoped[:limit]
+
+    return _ranked_search(scoped, item_query, limit)
+
+
+def search(query, limit=20):
+    """Score every entry against a query and return the best matches.
+
+    Use "category|item" to filter to one category first, then search
+    inside it. Plain text with no pipe searches every category at once.
+    """
+    load_all()
+    query = query.strip()
+    if not query:
+        return []
+
+    if "|" in query:
+        category_part, _, item_part = query.partition("|")
+        return _search_in_category(category_part, item_part, limit)
+
+    return _ranked_search(_ENTRIES.values(), query, limit)

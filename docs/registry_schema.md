@@ -32,9 +32,39 @@ Each file holds one JSON object with two fields.
 | `manual_url` | Yes | text | A link to the matching page on `docs.blender.org`. |
 | `images` | No | list of text | Paths to pictures under the `resources/images` folder. |
 | `gifs` | No | list of text | Paths to GIF files under the `resources/images` folder. Only the first frame shows in the popup. |
-| `videos` | No | list of text | Paths to video files under the `resources` folder. Shown as a "Play Video" button that opens in the system player. |
-| `keywords` | No | list of text | Extra words people might search for. |
+| `videos` | No | list | Either a path to a local video file, or an object with `url`, `label`, and `thumbnail` (see below). |
+| `tags` | No | list of text | Extra words people might search for. Also used by category search, see below. |
 | `rna_hint` | No | object | Optional. Holds `operator` and `property` values, kept for future use by more precise matching. |
+
+`manual_url` is optional. Most entries link to a page on `docs.blender.org`, but a
+community tool or technique can link anywhere useful instead, or leave the field out.
+
+### Video Entries
+
+A video entry can be a plain text path to a local file under `resources`, which
+shows a "Play Video" button that opens the file in the user's system player. It
+can also be an object, for an external video such as one on YouTube:
+
+```json
+{
+  "label": "Extrude Tool Explained (3Dnot2D)",
+  "url": "https://youtu.be/BRCAR-c6DFU",
+  "thumbnail": "images/video_examples/extrude_tool_explained_thumb.jpg"
+}
+```
+
+The `thumbnail` is a picture path, shown the same way as an image. The "Video"
+button next to it opens the `url` in the user's browser.
+
+## Searching by Category
+
+Typing a category name, then a pipe (`|`), then a search term filters results
+to only that category before searching. For example, `modeling|extrude` only
+looks inside the "modeling" category for "extrude". Typing `modeling|` with
+nothing after the pipe lists every entry in that category.
+
+Searching without a pipe still searches every category at once. The pipe is
+only a way to narrow things down, not a requirement.
 
 ## Worked Example
 
@@ -52,7 +82,7 @@ Each file holds one JSON object with two fields.
       "description": "Controls the falloff curve used by proportional editing, so nearby geometry moves more than distant geometry.",
       "manual_url": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/proportional_editing.html",
       "images": [],
-      "keywords": ["proportional", "falloff", "soft selection"]
+      "tags": ["proportional", "falloff", "soft selection"]
     }
   ]
 }

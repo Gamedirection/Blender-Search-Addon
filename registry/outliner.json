@@ -11,7 +11,9 @@
       "description": "Controls which kinds of data show inside the Outliner, such as objects, collections, or modifiers.",
       "manual_url": "https://docs.blender.org/manual/en/latest/editors/outliner/interface.html",
       "images": [],
-      "keywords": ["outliner", "filter", "visibility"]
+      "gifs": [],
+      "videos": [],
+      "tags": ["outliner", "filter", "visibility"]
     }
   ]
 }

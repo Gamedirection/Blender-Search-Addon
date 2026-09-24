@@ -11,7 +11,9 @@
       "description": "Controls the falloff curve used by proportional editing, so nearby geometry moves more than distant geometry.",
       "manual_url": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/proportional_editing.html",
       "images": [],
-      "keywords": ["proportional", "falloff", "soft selection", "o key"]
+      "gifs": [],
+      "videos": [],
+      "tags": ["proportional", "falloff", "soft selection", "o key"]
     },
     {
       "id": "view3d.snapping",
@@ -23,7 +25,57 @@
       "description": "Turns on snapping, so moved objects or points lock to a target such as a grid point or another vertex.",
       "manual_url": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/transform/control/snap.html",
       "images": [],
-      "keywords": ["snap", "magnet", "grid"]
+      "gifs": [],
+      "videos": [],
+      "tags": ["snap", "magnet", "grid"]
+    },
+    {
+      "id": "lighting.point_light",
+      "title": "Point Light",
+      "category": "lighting",
+      "space_type": "VIEW_3D",
+      "region_type": "WINDOW",
+      "ui_path": "3D Viewport > Add menu > Light > Point, then adjust in Properties > Object Data",
+      "description": "A light that shines evenly in every direction from a single point, similar to a bare light bulb.",
+      "manual_url": "https://docs.blender.org/manual/en/latest/render/lights/light_object.html",
+      "images": ["images/lighting/point_light_viewport.png"],
+      "gifs": [],
+      "videos": [],
+      "tags": ["light", "point", "lamp", "lighting"]
+    },
+    {
+      "id": "view3d.extrude",
+      "title": "Extrude",
+      "category": "modeling",
+      "space_type": "VIEW_3D",
+      "region_type": "WINDOW",
+      "ui_path": "Edit Mode > Mesh menu > Extrude, or the E key",
+      "description": "Pulls new geometry out of a selected face, edge, or vertex, connecting it back to the rest of the mesh.",
+      "manual_url": "https://docs.blender.org/manual/en/latest/modeling/meshes/editing/mesh/extrude.html",
+      "images": [],
+      "gifs": [],
+      "videos": [
+        {
+          "url": "https://youtu.be/BRCAR-c6DFU",
+          "thumbnail": "images/video_examples/extrude_tool_explained_thumb.jpg",
+          "label": "Extrude Tool Explained (3Dnot2D)"
+        }
+      ],
+      "tags": ["extrude", "mesh", "e key"]
+    },
+    {
+      "id": "modeling.twisted_extrude",
+      "title": "Twisted Extrude",
+      "category": "modeling",
+      "space_type": "VIEW_3D",
+      "region_type": "WINDOW",
+      "ui_path": "Edit Mode > Extrude with rotation added while extruding",
+      "description": "A modeling technique that twists geometry as it extrudes. Often built with a small add-on or a driver on the extrude rotation.",
+      "manual_url": "https://bazaar.blendernation.com/listing/twisted-extrude/",
+      "images": [],
+      "gifs": ["images/modeling/twisted_extrude.gif"],
+      "videos": [],
+      "tags": ["extrude", "twist", "modeling"]
     }
   ]
 }

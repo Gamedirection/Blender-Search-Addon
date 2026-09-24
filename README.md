@@ -57,7 +57,12 @@ on Windows, macOS, and Linux.
 4. Click the search button.
 5. If you leave the box empty, you see three groups: Favorite, Recent,
    and On-Screen (items whose editor is already open). Type part of a
-   name to search everything instead.
+   name to search everything instead. Search also looks at each item's
+   category and tags, not only its title.
+   - Type `category|term` to search inside one category only. For
+     example, `modeling|extrude` only looks inside the modeling
+     category. Type `modeling|` with nothing after the pipe to list
+     everything in that category.
 6. Click the star next to a result to add or remove it as a favorite.
 7. Click a result from the list.
 8. The addon highlights the item in yellow, if its editor is open.

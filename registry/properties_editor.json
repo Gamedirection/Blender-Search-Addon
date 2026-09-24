@@ -11,7 +11,9 @@
       "description": "Chooses which engine Blender uses to render your scene, such as EEVEE or Cycles.",
       "manual_url": "https://docs.blender.org/manual/en/latest/render/index.html",
       "images": [],
-      "keywords": ["render", "engine", "eevee", "cycles"]
+      "gifs": [],
+      "videos": [],
+      "tags": ["render", "engine", "eevee", "cycles"]
     }
   ]
 }

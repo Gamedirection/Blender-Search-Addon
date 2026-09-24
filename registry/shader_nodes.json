@@ -11,7 +11,9 @@
       "description": "A single shader node that models most common materials, such as metal, plastic, and skin, in one node.",
       "manual_url": "https://docs.blender.org/manual/en/latest/render/shader_nodes/shader/principled.html",
       "images": [],
-      "keywords": ["shader", "material", "bsdf", "principled"]
+      "gifs": [],
+      "videos": [],
+      "tags": ["shader", "material", "bsdf", "principled"]
     }
   ]
 }

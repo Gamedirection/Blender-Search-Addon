@@ -79,11 +79,23 @@ def draw_entry_info(layout, entry, exact=True):
                 box.label(text="First frame shown. GIFs do not play in this popup.")
 
     if show_videos:
-        for video_path in entry.get("videos", []):
+        for video in entry.get("videos", []):
+            if isinstance(video, str):
+                video = {"path": video}
+            label = video.get("label") or "Video"
+            thumbnail = video.get("thumbnail")
+            if thumbnail:
+                icon_id = _icon_id_for(thumbnail)
+                if icon_id:
+                    box.template_icon(icon_value=icon_id, scale=6.0)
             row = box.row()
-            row.label(text=Path(video_path).name)
-            props = row.operator("searchaddon.play_video", text="Play Video", icon='PLAY')
-            props.relative_path = video_path
+            row.label(text=label)
+            if video.get("url"):
+                props = row.operator("wm.url_open", text="Video", icon='PLAY')
+                props.url = video["url"]
+            elif video.get("path"):
+                props = row.operator("searchaddon.play_video", text="Video", icon='PLAY')
+                props.relative_path = video["path"]
 
     if entry.get("manual_url"):
         props = box.operator("wm.url_open", text="Open Blender Manual", icon='URL')
