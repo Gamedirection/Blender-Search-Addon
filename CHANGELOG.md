@@ -6,6 +6,17 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-09-24
+
+### Added
+- A GitHub Actions workflow (`.github/workflows/release.yml`) that
+  builds the addon zip and publishes it as a GitHub Release whenever
+  `VERSION` changes on `main`, tagged `v<VERSION>`, using that
+  version's `CHANGELOG.md` section as the release notes. Skips a
+  version that already has a release, so it is safe to re-run.
+- `scripts/changelog_section.py`, a small helper that prints one
+  version's section from `CHANGELOG.md`, used by the release workflow.
+
 ## [0.9.1] - 2026-09-24
 
 ### Added

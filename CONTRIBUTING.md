@@ -21,6 +21,13 @@ This project uses semantic versioning: MAJOR.MINOR.PATCH.
   links file format, a removed operator, a dropped Blender version.
 - When you raise a number, set every number below it back to 0.
 
+Once a change with a new `VERSION` reaches the `main` branch, a GitHub
+Actions workflow (`.github/workflows/release.yml`) builds the addon zip
+and publishes it as a GitHub Release automatically, tagged `v<VERSION>`,
+using that version's section of `CHANGELOG.md` as the release notes. There
+is nothing to do by hand for this; it only runs when `VERSION` changes,
+and skips a version that already has a release.
+
 ## Rules for Commit Messages
 
 1. Do not use an em dash in any commit message.
