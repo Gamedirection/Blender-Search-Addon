@@ -29,8 +29,9 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.value }}
         run: |
-          TAG="v${{ steps.version.outputs.value }}"
+          TAG="v${RELEASE_VERSION}"
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -44,10 +45,12 @@ jobs:
       - name: Read this version's changelog section
         if: steps.check.outputs.exists == 'false'
         id: changelog
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.value }}
         run: |
           {
             echo 'text<<CHANGELOG_EOF'
-            python3 scripts/changelog_section.py "${{ steps.version.outputs.value }}"
+            python3 scripts/changelog_section.py "$RELEASE_VERSION"
             echo 'CHANGELOG_EOF'
           } >> "$GITHUB_OUTPUT"
 
@@ -55,9 +58,11 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.value }}
+          RELEASE_NOTES: ${{ steps.changelog.outputs.text }}
         run: |
-          gh release create "v${{ steps.version.outputs.value }}" \
+          gh release create "v${RELEASE_VERSION}" \
             dist/*.zip \
             --repo "$GITHUB_REPOSITORY" \
-            --title "Version ${{ steps.version.outputs.value }}" \
-            --notes "${{ steps.changelog.outputs.text }}"
+            --title "Version ${RELEASE_VERSION}" \
+            --notes "$RELEASE_NOTES"

@@ -6,6 +6,18 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-09-24
+
+### Fixed
+- The release workflow's notes were missing every backtick-quoted term
+  (`VERSION`, `CHANGELOG.md`, and so on): GitHub Actions substitutes a
+  `${{ }}` expression as literal text into the shell script, so a
+  backtick from the changelog text was read by the shell as command
+  substitution and silently produced nothing. Every value the workflow
+  passes to a shell step is now passed through `env:` instead, so its
+  content is never re-interpreted by the shell. Confirmed by re-running
+  the workflow for this version and reading the resulting release back.
+
 ## [0.9.2] - 2026-09-24
 
 ### Added
