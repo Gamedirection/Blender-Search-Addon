@@ -268,6 +268,84 @@ to watch either in your system's player or browser instead.
    - Other
 3. Fill in the description field. Give as much detail as you can.
 
+## Known Issues
+
+This addon is still early. These are the three biggest known problems,
+what we have already tried for each one, and why it did not work.
+
+### The Registry Has Few Items So Far
+
+This addon ships with only a handful of example entries. It relies on
+people finding and adding the items Blender uses every day. This is by
+design, not a bug: use "New Entry" inside Blender, or send a "Missed
+Item" report, to help this grow. See "How to Create a New Entry Inside
+Blender" above.
+
+### A GIF Cannot Show a Picture Yet
+
+A GIF always shows as an "Open GIF" button, not a picture, even though
+images and video thumbnails both work. We tried two different ways to
+turn a GIF into a picture inside Blender's popup, and both failed:
+
+1. `bpy.utils.previews.load(key, path, 'IMAGE')`, the same simple
+   method used for plain pictures. This returned what looked like a
+   working picture right away, but Blender never actually finished
+   generating real pixels for it. We tested this with both a large
+   GIF (2.8 MB, about 90 frames) and a much smaller one (under 400 KB,
+   9 frames), with the exact same result each time, so file size was
+   not the cause.
+2. `bpy.data.images.load()` plus `image.preview_ensure()`, a heavier,
+   more complete way Blender has of reading a picture file. This
+   understands the GIF format correctly for other purposes, but still
+   did not produce a working picture in the popup either.
+
+A promising idea we have not tried yet: turn each GIF into a plain
+picture file (such as a PNG of its first frame) once, ahead of time,
+and show that instead of asking Blender to read the GIF itself. Since
+Blender already shows a plain picture correctly, this would sidestep
+the problem instead of solving it. If you know a working way to show a
+GIF inside a Blender popup, please tell us with a "Feature Request" or
+"Problem" report.
+
+### The Eyedropper Cannot Point at One Exact Button on Its Own
+
+The eyedropper, by default, can only tell you which general area of
+Blender's interface you are pointing at (an editor and a region, such
+as a toolbar or a header), not one exact small button inside it.
+Here is what we have tried, and why each one only gets partway there:
+
+1. Reading Blender's internal `button_pointer`, `button_prop`, and
+   `button_operator` information. These only ever get filled in for
+   the one moment Blender itself calls an operator because you hovered
+   a button while pressing its shortcut key. They are empty the rest
+   of the time, so an addon watching the mouse on its own cannot read
+   them.
+2. Matching only by editor and region, ignoring exact position. This
+   is reliable and works everywhere, but highlights a whole toolbar or
+   panel instead of one button, which is what the addon does today by
+   default.
+3. "Add by Clicking", which remembers the exact spot someone clicked
+   for one specific entry. This gives a small, precise highlight, but
+   only for entries a person has clicked on themselves, one at a time,
+   and only while they are on the same workspace tab they clicked it
+   in (see "Choosing region_type" and "Locations" in
+   `docs/registry_schema.md` for why).
+4. Looking into whether Blender's own native tooltip, which already
+   knows exactly what button you are pointing at, could tell this
+   addon what it was showing. It cannot: there is no way for any
+   addon to ask Blender what its native tooltip is currently showing,
+   and no way for an addon to add its own content into that tooltip
+   either. We confirmed this by checking several independent
+   discussions among Blender's own developers and community, who ran
+   into the exact same wall. The one real, useful thing this search
+   turned up, `bpy.utils.register_manual_map()`, only lets an entry's
+   link replace Blender's own "Online Manual" link for one specific,
+   already-known button. It does not help find an unknown button.
+
+A general, automatic way to point at any one exact button, in any
+layout, without a person clicking it first, remains an open problem.
+If you find one, please tell us with a "Feature Request" report.
+
 ## Version
 
 See the `VERSION` file for the current version number. See

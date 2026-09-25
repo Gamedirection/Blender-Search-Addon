@@ -6,6 +6,15 @@ All notable changes to this project are documented here. This project follows
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-09-24
+
+### Added
+- A "Known Issues" section in `README.md`, covering the three biggest
+  known problems: few registry items so far, GIFs not showing a
+  picture, and the eyedropper not being able to point at one exact
+  button on its own. Each one lists what has already been tried and
+  why it did not work, so the same dead ends are not repeated.
+
 ## [0.9.3] - 2026-09-24
 
 ### Fixed
